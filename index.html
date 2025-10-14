@@ -1,2089 +1,531 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <title>Monopoly FR — Deluxe</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Plateau Monopoly Moderne</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkfF6mt0eaaTDLXuHwZ1Q9apORdzdrIW6DCrA44vNXxjH1z1cZ8YdJQ3g==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
     <style>
-        :root{ --bg:#0b5; --bg2:#084; --ink:#111; --white:#fff; --muted:#6b7280; --panel:#f8fafc; --line:#064e3b; --accent:#2563eb; --ok:#16a34a; --warn:#f59e0b; --danger:#dc2626; --tile:#ffffff; --shadow:0 10px 28px rgba(0,0,0,.25); --card:#fffef6; --chance:#fffbdd; --comm:#eaf7ff; }
-        *{box-sizing:border-box}
-        html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;color:var(--ink);background:linear-gradient(135deg,var(--bg),var(--bg2))}
-        .app{display:grid;grid-template-columns:minmax(740px,1fr) 420px;gap:14px;height:100%;padding:14px}
-        .boardWrap{position:relative;background:radial-gradient(100% 100% at 0% 0%,rgba(255,255,255,.25),transparent),linear-gradient(180deg,rgba(255,255,255,.08),transparent);border-radius:16px;box-shadow:var(--shadow);padding:12px}
-        canvas#board{display:block;width:100%;height:100%;background:#e8f5e9;border-radius:12px;box-shadow:inset 0 0 0 6px var(--line)}
-        .right{display:flex;flex-direction:column;gap:12px}
-        .topbar{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-        .pill{background:var(--panel);border-radius:999px;padding:8px 12px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px}
-        .bars{cursor:pointer;font-weight:700;letter-spacing:.06em;background:var(--white);border:2px solid #ddd;border-radius:10px;padding:6px 10px;box-shadow:var(--shadow)}
-        .menu{position:absolute;right:14px;top:50px;background:var(--panel);border-radius:12px;box-shadow:var(--shadow);padding:10px;display:none;z-index:30}
-        .menu button,.menu .row{width:100%;margin:6px 0}
-        .panel{background:var(--panel);border-radius:16px;box-shadow:var(--shadow);padding:12px}
-        h3,h4{margin:0 0 8px 0}
-        .players{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto}
-        .player{background:#fff;border:1px solid #e5e7eb;border-left:6px solid var(--accent);border-radius:10px;padding:8px}
-        .player .row{display:flex;justify-content:space-between;gap:8px}
-        .money{font-weight:700}
-        .monos{font-variant-numeric:tabular-nums}
-        .btn{cursor:pointer;border:none;border-radius:10px;padding:10px 12px;font-weight:700;background:var(--accent);color:#fff;box-shadow:var(--shadow);transition:transform .05s ease}
-        .btn:active{transform:scale(.98)}
-        .btn[disabled]{opacity:.5;pointer-events:none}
-        .btn-row{display:grid;grid-template-columns:1fr;gap:8px}
-        .btn.ok{background:var(--ok)}
-        .btn.warn{background:var(--warn)}
-        .btn.danger{background:var(--danger)}
-        .hud{display:grid;grid-template-columns:1fr;gap:10px}
-        .log{background:#0b0b0b;color:#e2e8f0;border-radius:12px;padding:8px;height:190px;overflow:auto;font-size:.92rem}
-        .log b{color:#fff}
-        .caps{font-size:.8rem;color:#94a3b8;letter-spacing:.08em;text-transform:uppercase}
-        .tag{display:inline-block;background:#eef2ff;color:#3730a3;padding:2px 8px;border-radius:10px;font-size:.78rem}
-        /* Start Modal */
-        .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50}
-        .card{background:var(--panel);border-radius:16px;box-shadow:var(--shadow);padding:16px;max-width:1040px;width:96%;max-height:90%;overflow:auto}
-        .grid{display:grid;gap:12px}
-        .grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-        .grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-        .grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-        .field{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px}
-        select,input[type="number"],input[type="text"],input[type="range"]{width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;background:#fff}
-        label{font-weight:600;font-size:.9rem}
-        .row{display:flex;gap:10px;align-items:center;justify-content:space-between}
-        .seg{display:flex;gap:6px;flex-wrap:wrap}
-        .seg button{background:#fff;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;cursor:pointer}
-        .seg button.active{background:#111;color:#fff;border-color:#111}
-        /* Dice 3D */
-        .diceWrap{display:flex;gap:12px;justify-content:center;align-items:center;padding:8px}
-        .die{width:46px;height:46px;position:relative;transform-style:preserve-3d;transition:transform 1s cubic-bezier(.2,.6,.2,1);filter:drop-shadow(0 6px 10px rgba(0,0,0,.25))}
-        .face{position:absolute;width:100%;height:100%;background:#fff;border-radius:10px;border:2px solid #e5e7eb;display:grid;place-items:center;font-weight:900;font-size:20px}
-        .f1{transform:rotateY(0deg) translateZ(23px)}
-        .f2{transform:rotateY(90deg) translateZ(23px)}
-        .f3{transform:rotateY(180deg) translateZ(23px)}
-        .f4{transform:rotateY(-90deg) translateZ(23px)}
-        .f5{transform:rotateX(90deg) translateZ(23px)}
-        .f6{transform:rotateX(-90deg) translateZ(23px)}
-        /* Card flip overlay (Chance / Caisse + Propriété) */
-        .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:60}
-        .flip{width:360px;height:520px;perspective:1200px}
-        .flip.wide{width:420px;height:560px}
-        .flipInner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .8s}
-        .flip.show .flipInner{transform:rotateY(180deg)}
-        .cardFace{position:absolute;inset:0;border-radius:14px;border:6px solid #222;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;padding:16px;backface-visibility:hidden}
-        .cardFace.front{background:linear-gradient(145deg,#fff,#f1f5f9)}
-        .cardFace.back{transform:rotateY(180deg)}
-        .cardFace h2{margin:0}
-        .cardFace p{margin:0;text-align:center;white-space:pre-wrap}
-        .cardFace .big{font-size:1.3rem;font-weight:800}
-        /* Confetti */
-        .confetti{pointer-events:none;position:fixed;inset:0;overflow:hidden;z-index:70}
-        .confetti i{position:absolute;width:10px;height:18px;background:currentColor;opacity:.9;animation:fall 1.8s linear forwards}
-        @keyframes fall{to{transform:translateY(120vh) rotate(540deg);opacity:0}}
-        /* Toast */
-        .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#111;color:#fff;border-radius:999px;padding:10px 16px;font-weight:700;z-index:90;display:none}
-        .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-        .fine{font-size:.85rem;color:#64748b}
-        .fine2{font-size:.86rem;color:#475569}
-        /* Trade Modal (écran d’échange) */
-        .modal.trade{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:80;align-items:center;justify-content:center}
-        .tradeCard{background:var(--panel);border-radius:18px;box-shadow:var(--shadow);padding:16px;max-width:1000px;width:96%;max-height:92%;overflow:auto}
-        .tradeGrid{display:grid;grid-template-columns:1fr 280px 1fr;gap:12px;margin-top:8px}
-        .tradeCol{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px}
-        .tradeCol h4{margin:0 0 6px 0}
-        .tradeList{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto}
-        .tradeItem{display:flex;align-items:center;gap:8px;border:1px solid #e5e7eb;border-radius:10px;padding:6px}
-        .tradeItem .swatch{width:14px;height:14px;border-radius:3px;border:1px solid #111}
-        .tradeMid{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center}
-        .tradeBtns{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
-        .acceptPanel{margin-top:10px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:10px}
-        .acceptPanel .btn{padding:8px 10px}
-        /* Propriété (galerie joueur courant) */
-        .propGallery{display:flex;flex-wrap:wrap;gap:6px;max-height:150px;overflow:auto}
-        .chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:4px 8px;cursor:pointer}
-        .chip .sw{width:12px;height:12px;border-radius:3px;border:1px solid #111}
-        /* Timer tag */
-        .clock{display:inline-flex;align-items:center;gap:6px;background:#111;color:#fff;border-radius:999px;padding:4px 8px;font-size:.85rem}
+        :root {
+            --brown: #955436;
+            --light-blue: #9ad5f2;
+            --pink: #f19ac3;
+            --orange: #f5a05f;
+            --red: #e63946;
+            --yellow: #f9ed69;
+            --green: #2a9d8f;
+            --dark-blue: #0d47a1;
+            --violet: #9c5ce0;
+            --board-bg: #f9fafb;
+            --ink: #1f2933;
+            --muted: #6c7a89;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Poppins', sans-serif;
+            color: var(--ink);
+            background: radial-gradient(circle at top left, #fdf2f8, #dbeafe 40%, #c7d2fe 80%);
+        }
+        .page-wrap {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem 1rem;
+        }
+        .board-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+        .board {
+            width: min(60vw, 60vh);
+            height: min(60vw, 60vh);
+            background: var(--board-bg);
+            border: 14px solid #111;
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(15, 23, 42, 0.2);
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            grid-template-rows: repeat(11, 1fr);
+            position: relative;
+            overflow: hidden;
+        }
+        .board::before {
+            content: "";
+            position: absolute;
+            inset: 16px;
+            border: 3px dashed rgba(17, 17, 17, 0.08);
+            border-radius: 22px;
+            pointer-events: none;
+        }
+        .center {
+            grid-column: 2 / 11;
+            grid-row: 2 / 11;
+            background: linear-gradient(140deg, rgba(13, 71, 161, 0.08), rgba(42, 157, 143, 0.08));
+            border-radius: 20px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            padding: 1.5rem;
+        }
+        .center-logo {
+            border: 6px solid #111;
+            border-radius: 18px;
+            background: linear-gradient(120deg, #ef4444, #f97316);
+            color: #fff;
+            padding: 2rem 1.5rem;
+            display: inline-flex;
+            flex-direction: column;
+            gap: .5rem;
+            box-shadow: inset 0 0 0 6px rgba(255,255,255,.18), 0 18px 30px rgba(239, 68, 68, 0.25);
+        }
+        .center-logo span {
+            font-size: 1rem;
+            letter-spacing: .5rem;
+        }
+        .center-logo strong {
+            font-size: clamp(1.6rem, 3vw, 2.6rem);
+            text-transform: uppercase;
+            letter-spacing: .6rem;
+        }
+        .square {
+            border: 1px solid rgba(17, 17, 17, 0.12);
+            background: rgba(255,255,255,0.88);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            text-align: center;
+            position: relative;
+            transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+        .square .inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+            height: 100%;
+            padding: 2px;
+        }
+        .square .label {
+            font-size: clamp(0.42rem, 1.2vw, 0.7rem);
+            font-weight: 600;
+            line-height: 1.1;
+        }
+        .square .price {
+            font-size: clamp(0.4rem, 1vw, 0.6rem);
+            color: var(--muted);
+        }
+        .square .color-bar {
+            width: 100%;
+            height: 18%;
+            border-radius: 4px;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
+        }
+        .square .icon {
+            font-size: clamp(0.6rem, 1.4vw, 0.95rem);
+            color: #111;
+        }
+        .square.corner {
+            background: radial-gradient(circle at center, rgba(255,255,255,0.95), rgba(255,255,255,0.8));
+            font-size: clamp(0.6rem, 1.2vw, 0.9rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            gap: .25rem;
+        }
+        .square.corner .inner {
+            gap: .2rem;
+        }
+        .square.corner i {
+            font-size: clamp(1.2rem, 2vw, 1.8rem);
+            color: #111;
+        }
+        .square:hover {
+            cursor: pointer;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.22);
+            background: rgba(255,255,255,0.95);
+        }
+        .square.active {
+            box-shadow: inset 0 0 0 3px #facc15, 0 12px 22px rgba(251, 191, 36, 0.4);
+            background: rgba(255, 247, 179, 0.92);
+        }
+        .square.bottom .inner {}
+        .square.left .inner { transform: rotate(90deg); }
+        .square.top .inner { transform: rotate(180deg); }
+        .square.right .inner { transform: rotate(-90deg); }
+        .square.corner.bottom-left .inner { transform: rotate(90deg); }
+        .square.corner.top-left .inner { transform: rotate(180deg); }
+        .square.corner.top-right .inner { transform: rotate(-90deg); }
+        .square.corner.bottom-right .inner { transform: rotate(0deg); }
+
+        @media (max-width: 992px) {
+            .board {
+                width: min(88vw, 88vh);
+                height: min(88vw, 88vh);
+            }
+        }
+        @media (max-width: 768px) {
+            .panel {
+                margin-top: 2rem;
+            }
+        }
+        .info-card {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+        }
+        .timeline {
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .timeline::-webkit-scrollbar {
+            width: 6px;
+        }
+        .timeline::-webkit-scrollbar-thumb {
+            background: rgba(17,17,17,0.2);
+            border-radius: 99px;
+        }
+        .btn-monopoly {
+            border-radius: 999px;
+            font-weight: 600;
+            padding: 0.75rem 1.6rem;
+        }
+        .group-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .35rem .8rem;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+        .dice {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 2rem;
+        }
+        .dice i {
+            color: #111;
+        }
     </style>
 </head>
 <body>
-
-<div class="app">
-    <div class="boardWrap">
-        <canvas id="board" width="960" height="960"></canvas>
-    </div>
-    <div class="right">
-        <div class="topbar">
-            <div class="pill" id="eventPill" style="display:none; background: var(--warn); color: var(--ink);"><span id="eventText"></span></div>
-            <div class="pill">
-                <div class="diceWrap" id="diceWrap">
-                    <div class="die" id="d1">
-                        <div class="face f1">1</div><div class="face f2">2</div><div class="face f3">3</div>
-                        <div class="face f4">4</div><div class="face f5">5</div><div class="face f6">6</div>
-                    </div>
-                    <div class="die" id="d2">
-                        <div class="face f1">1</div><div class="face f2">2</div><div class="face f3">3</div>
-                        <div class="face f4">4</div><div class="face f5">5</div><div class="face f6">6</div>
+    <div class="page-wrap">
+        <div class="container-xl">
+            <div class="row g-4 align-items-center justify-content-center">
+                <div class="col-12 col-lg-7 d-flex justify-content-center">
+                    <div class="board-wrapper">
+                        <div id="board" class="board">
+                            <div class="center">
+                                <div class="center-logo">
+                                    <span>ÉDITION FR</span>
+                                    <strong>MONOPOLY</strong>
+                                    <span>DELUXE</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <button id="btnRoll" class="btn">🎲 Lancer les dés</button>
-            </div>
-            <div class="pill"><span class="clock" id="turnClock">⏱️ --</span></div>
-            <button class="bars" id="btnBars">||</button>
-            <div class="menu" id="menuBars">
-                <div class="row">
-                    <label>Volume musique</label>
-                    <input id="volMusic" type="range" min="0" max="100" value="35"/>
-                </div>
-                <button class="btn ok" id="btnPause">⏸️ Pause</button>
-                <button class="btn" id="btnResume" disabled>▶️ Reprendre</button>
-                <button class="btn warn" id="btnSave">💾 Sauvegarder</button>
-                <button class="btn" id="btnLoad">📂 Charger</button>
-                <button class="btn danger" id="btnQuit">🚪 Abandonner</button>
-            </div>
-        </div>
-        <div class="panel">
-            <h3>Joueurs</h3>
-            <div id="players" class="players"></div>
-        </div>
-        <div class="panel">
-            <div class="row"><div class="caps">Propriétés (joueur courant)</div><span class="fine">Clique pour la carte recto/verso</span></div>
-            <div id="propGallery" class="propGallery"></div>
-        </div>
-        <div class="panel hud">
-            <div>
-                <div class="caps">Actions</div>
-                <div class="btn-row">
-                    <button class="btn" id="btnBuy" disabled>🏦 Acheter</button>
-                    <button class="btn" id="btnBuild" disabled>🏗️ Construire</button>
-                    <button class="btn" id="btnTrade">🤝 Échanger</button>
-                    <button class="btn" id="btnAuction" disabled>🔨 Enchères</button>
-                    <button class="btn ok" id="btnEnd" disabled>✅ Fin de tour</button>
-                </div>
-            </div>
-            <div>
-                <div class="row" style="justify-content:space-between">
-                    <div class="caps">Journal</div>
-                    <span class="tag mono" id="turnTag">Tour 1</span>
-                </div>
-                <div id="log" class="log"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal" id="startModal">
-    <div class="card">
-        <h2 style="margin:0 0 6px 0">Nouvelle partie — Monopoly FR (Deluxe)</h2>
-        <p class="fine">Tout est conservé. Ajouts : animations, musiques, IA négociatrice/mémoire, modes Rapide/Équipe/Mission, et bien plus.</p>
-        <div class="grid cols-4">
-            <div class="field">
-                <label>Nombre de joueurs (2–8)</label>
-                <input type="number" id="numPlayers" min="2" max="8" value="2"/>
-            </div>
-            <div class="field">
-                <label>Difficulté IA</label>
-                <select id="aiDifficulty">
-                    <option>Facile</option>
-                    <option selected>Modéré</option>
-                    <option>Difficile</option>
-                </select>
-            </div>
-            <div class="field">
-                <label>Monopole requis pour construire ?</label>
-                <select id="optMonopolyReq">
-                    <option value="1" selected>Oui (classique)</option>
-                    <option value="0">Non</option>
-                </select>
-            </div>
-            <div class="field">
-                <label>Parc Gratuit = Jackpot ?</label>
-                <select id="optJackpot">
-                    <option value="1">Oui</option>
-                    <option value="0" selected>Non</option>
-                </select>
-            </div>
-        </div>
-        <div class="grid cols-4" style="margin-top:6px">
-            <div class="field">
-                <label>Mode Rapide (sec/tour, 0=off)</label>
-                <input type="number" id="optTurnTimer" min="0" max="180" value="30"/>
-            </div>
-            <div class="field">
-                <label>Durée partie (min, 0=infini)</label>
-                <input type="number" id="optGameMinutes" min="0" max="240" value="0"/>
-            </div>
-            <div class="field">
-                <label>Mode Équipe</label>
-                <select id="optTeams">
-                    <option value="0" selected>Off</option>
-                    <option value="2">2 équipes</option>
-                    <option value="3">3 équipes</option>
-                </select>
-            </div>
-            <div class="field">
-                <label>Mission</label>
-                <select id="optMission">
-                    <option value="none" selected>Aucune</option>
-                    <option value="hotel_red">1er Hôtel sur rouge</option>
-                    <option value="all_stations">Posséder toutes les gares</option>
-                    <option value="cash_4000">Atteindre 4000€</option>
-                    <option value="combo_master">2 gares + 1 utilité + 1 hôtel</option>
-                </select>
-            </div>
-        </div>
-        <h4 style="margin:12px 0 4px 0; grid-column: 1 / -1;">Règles & Modes optionnels</h4>
-        <div class="grid cols-4" style="margin-top:0">
-             <div class="field">
-                <label title="Pool global: 32 maisons, 12 hôtels">Pénurie de maisons</label>
-                <select id="optShortage">
-                    <option value="0" selected>Off</option>
-                    <option value="1">On</option>
-                </select>
-            </div>
-            <div class="field">
-                <label title="Construire uniformément sur un groupe">Construction équilibrée</label>
-                <select id="optEvenBuild">
-                    <option value="0" selected>Off</option>
-                    <option value="1">On</option>
-                </select>
-            </div>
-            <div class="field">
-                <label title="Propriétés distribuées au départ">Mode "Draft"</label>
-                <select id="optDraft">
-                    <option value="0" selected>Off</option>
-                    <option value="2">2 par joueur</option>
-                    <option value="3">3 par joueur</option>
-                </select>
-            </div>
-             <div class="field">
-                <label title="Active la construction d'hôtels multiples et de la Tour Eiffel">Mode Tour Eiffel</label>
-                <select id="optEiffel">
-                    <option value="0" selected>Off</option>
-                    <option value="1">On</option>
-                </select>
-            </div>
-            <div class="field">
-                <label title="Marché haussier, grèves...">Événements aléatoires</label>
-                <select id="optEvents">
-                    <option value="0" selected>Off</option>
-                    <option value="1">On (rares)</option>
-                </select>
-            </div>
-             <div class="field">
-                <label title="Vente/Hypo si cash bas tous les 5 tours">Vente forcée</label>
-                <select id="optForcedSale">
-                    <option value="0" selected>Off</option>
-                    <option value="1">On</option>
-                </select>
-            </div>
-            <div class="field">
-                <label title="Le prix de revente des bâtiments baisse à chaque tour (0% = classique)">Baisse prix revente (%/tour)</label>
-                <input type="number" id="optSellDecay" min="0" max="5" value="0" step="0.1"/>
-            </div>
-        </div>
-
-        <h3 style="margin-top:14px">Configuration des joueurs</h3>
-        <div id="playersCfg" class="grid cols-2"></div>
-        <div class="row" style="justify-content:flex-end;margin-top:10px">
-            <button class="btn" id="btnStart">🚀 Démarrer</button>
-        </div>
-    </div>
-</div>
-
-<div class="overlay" id="cardOverlay">
-    <div class="flip" id="flip">
-        <div class="flipInner">
-            <div class="cardFace front">
-                <h2 id="flipFrontTitle">Carte tirée</h2>
-                <div id="flipFrontText">Retourne la carte…</div>
-            </div>
-            <div class="cardFace back" id="cardBack">
-                <h2 id="cardTitle">Chance</h2>
-                <p class="big" id="cardText"></p>
-                <div id="cardEffect" class="fine"></div>
-                <button class="btn ok" id="btnCardOk">OK</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<div class="confetti" id="confetti"></div>
-
-<div class="modal trade" id="tradeModal">
-    <div class="tradeCard">
-        <h3 style="margin:0">Proposer un échange</h3>
-        <p class="fine">Sélectionne <b>une</b> de tes propriétés et <b>une</b> chez l’adversaire. Cash optionnel.</p>
-        <div class="field" style="margin-top:8px">
-            <label>Adversaire</label>
-            <select id="tradeOpponent"></select>
-        </div>
-        <div class="tradeGrid">
-            <div class="tradeCol">
-                <h4 id="tradeFromTitle">Tes propriétés</h4>
-                <div class="tradeList" id="tradeFromList"></div>
-                <div class="row" style="margin-top:6px">
-                    <span class="fine2">Cash que TU donnes (€)</span>
-                    <input type="number" id="tradeCashFrom" min="0" value="0" style="width:120px"/>
-                </div>
-            </div>
-            <div class="tradeMid">
-                <div class="field">
-                    <label>Rappel</label>
-                    <div class="fine2">Au moins une propriété de chaque côté.</div>
-                </div>
-                <div class="tradeBtns">
-                    <button class="btn" id="tradeSuggestAi">💡 Proposition rapide IA (option)</button>
-                </div>
-                <div class="tradeBtns">
-                    <button class="btn ok" id="tradeSend">📨 Envoyer la proposition</button>
-                    <button class="btn danger" id="tradeCancel">✖️ Fermer</button>
-                </div>
-                <div class="acceptPanel" id="tradeAcceptPanel" style="display:none">
-                    <div class="fine2" id="tradePendingText">En attente de la réponse…</div>
-                    <div class="row" style="gap:8px;margin-top:8px">
-                        <button class="btn ok" id="tradeAcceptBtn">✅ Accepter</button>
-                        <button class="btn danger" id="tradeRejectBtn">❌ Refuser</button>
+                <div class="col-12 col-lg-5">
+                    <div class="info-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h1 class="h4 mb-0">Contrôle du plateau</h1>
+                                <p class="text-secondary mb-0">Clique sur une case ou lance les dés pour explorer.</p>
+                            </div>
+                            <div class="dice" id="dice">
+                                <i class="fa-solid fa-dice-one" id="diceOne"></i>
+                                <i class="fa-solid fa-dice-one" id="diceTwo"></i>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn btn-danger btn-monopoly" id="rollBtn"><i class="fa-solid fa-dice me-2"></i>Lancer les dés</button>
+                            <button class="btn btn-outline-dark btn-monopoly" id="resetBtn"><i class="fa-solid fa-rotate-left me-2"></i>Réinitialiser</button>
+                        </div>
+                        <div class="border-top pt-3 mt-3">
+                            <span class="text-uppercase fw-semibold small text-secondary">Case active</span>
+                            <h2 class="h4 mt-1" id="propertyTitle">Départ</h2>
+                            <div id="groupBadge" class="group-pill bg-warning-subtle text-warning-emphasis mb-2">
+                                <i class="fa-solid fa-flag-checkered"></i>
+                                Départ
+                            </div>
+                            <p class="mb-0 text-secondary" id="propertyDescription">Touchez 200 ₣ lorsque vous passez par la case Départ. Bon jeu !</p>
+                        </div>
+                        <div class="border-top pt-3 mt-4">
+                            <span class="text-uppercase fw-semibold small text-secondary">Journal</span>
+                            <div class="timeline" id="log"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="tradeCol">
-                <h4 id="tradeToTitle">Propriétés adverses</h4>
-                <div class="tradeList" id="tradeToList"></div>
-                <div class="row" style="margin-top:6px">
-                    <span class="fine2">Cash que L’AUTRE te donne (€)</span>
-                    <input type="number" id="tradeCashTo" min="0" value="0" style="width:120px"/>
-                </div>
-            </div>
         </div>
     </div>
-</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        const squares = [
+            { name: 'Départ', type: 'corner', icon: 'fa-flag-checkered', info: 'Touchez 200 ₣ lorsque vous passez par la case Départ. Bon jeu !', color: '#facc15' },
+            { name: 'Boulevard de Belleville', type: 'property', group: 'brown', price: '60 ₣', info: 'Loyer nu : 2 ₣\nLoyer complet : 50 ₣', color: '--brown' },
+            { name: 'Caisse de communauté', type: 'community', icon: 'fa-gift', info: 'Piochez une carte Caisse de communauté.', color: '#38bdf8' },
+            { name: 'Rue Lecourbe', type: 'property', group: 'brown', price: '60 ₣', info: 'Loyer nu : 4 ₣\nLoyer complet : 60 ₣', color: '--brown' },
+            { name: 'Impôts sur le revenu', type: 'tax', icon: 'fa-sack-dollar', info: 'Payez 200 ₣ au Trésor.', color: '#e11d48' },
+            { name: 'Gare Montparnasse', type: 'station', icon: 'fa-train-subway', price: '200 ₣', info: 'Loyer x nombre de gares possédées.', color: '#475569' },
+            { name: 'Rue de Vaugirard', type: 'property', group: 'light-blue', price: '100 ₣', info: 'Loyer nu : 6 ₣\nLoyer complet : 90 ₣', color: '--light-blue' },
+            { name: 'Chance', type: 'chance', icon: 'fa-shuffle', info: 'Piochez une carte Chance.', color: '#fb923c' },
+            { name: 'Rue de Courcelles', type: 'property', group: 'light-blue', price: '100 ₣', info: 'Loyer nu : 6 ₣\nLoyer complet : 90 ₣', color: '--light-blue' },
+            { name: 'Avenue de la République', type: 'property', group: 'light-blue', price: '120 ₣', info: 'Loyer nu : 8 ₣\nLoyer complet : 100 ₣', color: '--light-blue' },
+            { name: 'Simple visite', type: 'corner', icon: 'fa-person-booth', info: 'En visite au poste de police. Vous êtes simplement de passage.', color: '#38bdf8' },
+            { name: 'Boulevard de la Villette', type: 'property', group: 'pink', price: '140 ₣', info: 'Loyer nu : 10 ₣\nLoyer complet : 140 ₣', color: '--pink' },
+            { name: 'Compagnie des eaux', type: 'utility', icon: 'fa-faucet', price: '150 ₣', info: 'Payez 4x le total des dés (10x si deux compagnies).', color: '#14b8a6' },
+            { name: 'Avenue de Neuilly', type: 'property', group: 'pink', price: '140 ₣', info: 'Loyer nu : 10 ₣\nLoyer complet : 140 ₣', color: '--pink' },
+            { name: 'Rue de Paradis', type: 'property', group: 'pink', price: '160 ₣', info: 'Loyer nu : 12 ₣\nLoyer complet : 160 ₣', color: '--pink' },
+            { name: 'Gare de Lyon', type: 'station', icon: 'fa-train-subway', price: '200 ₣', info: 'Loyer x nombre de gares possédées.', color: '#475569' },
+            { name: 'Avenue Mozart', type: 'property', group: 'orange', price: '180 ₣', info: 'Loyer nu : 14 ₣\nLoyer complet : 180 ₣', color: '--orange' },
+            { name: 'Caisse de communauté', type: 'community', icon: 'fa-gift', info: 'Piochez une carte Caisse de communauté.', color: '#38bdf8' },
+            { name: 'Boulevard Saint-Michel', type: 'property', group: 'orange', price: '180 ₣', info: 'Loyer nu : 14 ₣\nLoyer complet : 180 ₣', color: '--orange' },
+            { name: 'Place Pigalle', type: 'property', group: 'orange', price: '200 ₣', info: 'Loyer nu : 16 ₣\nLoyer complet : 200 ₣', color: '--orange' },
+            { name: 'Parc Gratuit', type: 'corner', icon: 'fa-tree-city', info: 'Profitez du parc et respirez un peu !', color: '#22c55e' },
+            { name: 'Avenue Matignon', type: 'property', group: 'red', price: '220 ₣', info: 'Loyer nu : 18 ₣\nLoyer complet : 220 ₣', color: '--red' },
+            { name: 'Chance', type: 'chance', icon: 'fa-shuffle', info: 'Piochez une carte Chance.', color: '#fb923c' },
+            { name: 'Boulevard Malesherbes', type: 'property', group: 'red', price: '220 ₣', info: 'Loyer nu : 18 ₣\nLoyer complet : 220 ₣', color: '--red' },
+            { name: 'Avenue Henri-Martin', type: 'property', group: 'red', price: '240 ₣', info: 'Loyer nu : 20 ₣\nLoyer complet : 240 ₣', color: '--red' },
+            { name: 'Gare du Nord', type: 'station', icon: 'fa-train-subway', price: '200 ₣', info: 'Loyer x nombre de gares possédées.', color: '#475569' },
+            { name: 'Faubourg Saint-Honoré', type: 'property', group: 'yellow', price: '260 ₣', info: 'Loyer nu : 22 ₣\nLoyer complet : 260 ₣', color: '--yellow' },
+            { name: 'Place de la Bourse', type: 'property', group: 'yellow', price: '260 ₣', info: 'Loyer nu : 22 ₣\nLoyer complet : 260 ₣', color: '--yellow' },
+            { name: "Compagnie d'électricité", type: 'utility', icon: 'fa-bolt', price: '150 ₣', info: 'Payez 4x le total des dés (10x si deux compagnies).', color: '#14b8a6' },
+            { name: 'Rue La Fayette', type: 'property', group: 'yellow', price: '280 ₣', info: 'Loyer nu : 24 ₣\nLoyer complet : 280 ₣', color: '--yellow' },
+            { name: 'Allez en prison', type: 'corner', icon: 'fa-gavel', info: 'Direction la prison ! Déplacez votre pion immédiatement.', color: '#ef4444' },
+            { name: 'Avenue de Breteuil', type: 'property', group: 'green', price: '300 ₣', info: 'Loyer nu : 26 ₣\nLoyer complet : 300 ₣', color: '--green' },
+            { name: 'Avenue Foch', type: 'property', group: 'green', price: '300 ₣', info: 'Loyer nu : 26 ₣\nLoyer complet : 300 ₣', color: '--green' },
+            { name: 'Caisse de communauté', type: 'community', icon: 'fa-gift', info: 'Piochez une carte Caisse de communauté.', color: '#38bdf8' },
+            { name: 'Boulevard des Capucines', type: 'property', group: 'green', price: '320 ₣', info: 'Loyer nu : 28 ₣\nLoyer complet : 320 ₣', color: '--green' },
+            { name: 'Gare Saint-Lazare', type: 'station', icon: 'fa-train-subway', price: '200 ₣', info: 'Loyer x nombre de gares possédées.', color: '#475569' },
+            { name: 'Chance', type: 'chance', icon: 'fa-shuffle', info: 'Piochez une carte Chance.', color: '#fb923c' },
+            { name: 'Avenue des Champs-Élysées', type: 'property', group: 'dark-blue', price: '350 ₣', info: 'Loyer nu : 35 ₣\nLoyer complet : 400 ₣', color: '--dark-blue' },
+            { name: 'Taxe de luxe', type: 'tax', icon: 'fa-gem', info: 'Payez 100 ₣ de taxe de luxe.', color: '#a855f7' },
+            { name: 'Rue de la Paix', type: 'property', group: 'dark-blue', price: '400 ₣', info: 'Loyer nu : 50 ₣\nLoyer complet : 500 ₣', color: '--dark-blue' }
+        ];
 
-<div class="modal" id="buildModal" style="display:none; z-index:85;">
-    <div class="tradeCard" style="max-width: 700px;">
-        <h3 style="margin:0">Construire 🏗️</h3>
-        <p class="fine">Sélectionnez une propriété sur laquelle construire. La construction doit être équilibrée si l'option est activée.</p>
-        <div id="buildList" class="tradeList" style="max-height:400px; margin-top:12px; display:flex; flex-direction:column; gap:8px;">
-            <!-- Build options will be injected here -->
-        </div>
-        <div class="tradeBtns" style="justify-content: flex-end;">
-            <button class="btn danger" id="buildCancel">✖️ Fermer</button>
-        </div>
-    </div>
-</div>
+        const board = document.getElementById('board');
+        const logEl = document.getElementById('log');
+        const titleEl = document.getElementById('propertyTitle');
+        const descEl = document.getElementById('propertyDescription');
+        const badgeEl = document.getElementById('groupBadge');
+        const rollBtn = document.getElementById('rollBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const diceOne = document.getElementById('diceOne');
+        const diceTwo = document.getElementById('diceTwo');
 
-<div class="modal" id="debtModal" style="display:none; z-index:95;">
-    <div class="tradeCard" style="max-width: 800px;">
-        <h3 style="margin:0; color:var(--danger);">Dette à rembourser !</h3>
-        <p class="fine">Votre solde est négatif. Vous devez vendre des bâtiments ou hypothéquer des propriétés pour réunir la somme nécessaire.</p>
-        <div class="row" style="justify-content:space-between; background: #fff8e1; padding: 8px; border-radius: 8px; margin-top:10px;">
-            <b style="font-size:1.1rem;">Dette restante:</b>
-            <b style="font-size:1.1rem;" id="debtAmount">0€</b>
-        </div>
-        <div class="tradeGrid" style="grid-template-columns: 1fr 1fr; margin-top:12px;">
-            <div class="tradeCol">
-                <h4>Vendre des bâtiments</h4>
-                <div id="sellList" class="tradeList" style="max-height:300px;"></div>
-            </div>
-            <div class="tradeCol">
-                <h4>Hypothéquer</h4>
-                <div id="mortgageList" class="tradeList" style="max-height:300px;"></div>
-            </div>
-        </div>
-        <div class="tradeBtns" style="margin-top:12px;">
-            <button class="btn danger" id="btnBankrupt">Déclarer faillite</button>
-        </div>
-    </div>
-</div>
+        const diceClasses = {
+            1: 'fa-dice-one',
+            2: 'fa-dice-two',
+            3: 'fa-dice-three',
+            4: 'fa-dice-four',
+            5: 'fa-dice-five',
+            6: 'fa-dice-six'
+        };
 
+        let activeIndex = 0;
 
-<script>
-/* =============================== AUDIO — SFX + MUSIQUES (WebAudio) =============================== */
-const AudioCtx = (window.AudioContext||window.webkitAudioContext) ? new (window.AudioContext||window.webkitAudioContext)() : null;
-const Master = AudioCtx?AudioCtx.createGain():null;
-if(Master){ Master.gain.value=.18; Master.connect(AudioCtx.destination); }
-function now(){ return AudioCtx?AudioCtx.currentTime:0; }
-function osc(freq=440,type='sine',dur=.15,g=.8, when=0){
-    if(!AudioCtx) return {stop:()=>{}};
-    const o=AudioCtx.createOscillator(), gnode=AudioCtx.createGain();
-    o.type=type; o.frequency.value=freq; gnode.gain.value=0; o.connect(gnode); gnode.connect(Master);
-    const t = now()+when;
-    gnode.gain.setTargetAtTime(g, t, .005);
-    gnode.gain.setTargetAtTime(0, t+dur*.6, .03);
-    o.start(t); o.stop(t+dur+.06);
-    return o;
-}
-const SFX = {
-    click: ()=>{ osc(600,'square',.06,.5); osc(520,'square',.04,.4,.07); },
-    dice : ()=>{ osc(220,'triangle',.10,.8); osc(260,'triangle',.10,.8,.11); osc(200,'triangle',.08,.7,.22); },
-    buy  : ()=>{ osc(440,'sine',.12,.9); osc(660,'sine',.12,.9,.13); osc(880,'sine',.16,.8,.27); },
-    rent : ()=>{ osc(200,'sawtooth',.10,.8); osc(160,'sawtooth',.12,.7,.12); },
-    build: ()=>{ osc(300,'square',.09,.7); osc(500,'square',.11,.8,.12); osc(700,'square',.12,.9,.25); },
-    card : ()=>{ osc(520,'triangle',.10,.8); osc(780,'triangle',.12,.8,.12); },
-    jail : ()=>{ osc(140,'square',.15,.9); osc(90 ,'square',.20,.8,.17); },
-    bankrupt: ()=>{ osc(120,'sawtooth',.18,.9); osc(80,'sawtooth',.26,.9,.2); osc(60,'sawtooth',.32,.9,.44); },
-    win  : ()=>{ [392,523,659,784].forEach((f,i)=>osc(f,'sine',.12+.02*i,.9,.14*i)); },
-};
-const Music = (()=> {
-    if(!AudioCtx) return {setVol:()=>{}, play:()=>{}, stop:()=>{}};
-    const bus = AudioCtx.createGain(); bus.gain.value=.35; bus.connect(Master);
-    let curr = null, timer=null;
-    function melody(pattern, bpm=90){
-        stop();
-        const beat = 60/bpm; let t = now();
-        pattern.forEach(([f,d,type,g],i)=>{ osc(f,type,d,g, (beat*i)); });
-        // loop
-        timer = setInterval(()=>{
-             pattern.forEach(([f,d,type,g],i)=>{ osc(f,type,d,g, (beat*i)); });
-        }, beat*pattern.length*1000);
-        curr = 'mel';
-    }
-    function ambient(){
-        stop();
-        const base = [ [220,.3,'sine',.15],[0,.05],[330,.25,'sine',.13],[0,.05],[262,.28,'sine',.12],[0,.05],[294,.32,'sine',.14], [0,.15],[196,.34,'triangle',.12],[0,.1],[262,.26,'triangle',.12] ];
-        let t0 = now();
-        timer=setInterval(()=>{
-            let t=0; base.forEach(([f,d,type,g])=>{ if(f>0) osc(f,type,d,g,t); t+=d+.05; });
-        }, 2800);
-        curr='ambient';
-    }
-    function auction(){ melody([[392,.12,'square',.25],[440,.12,'square',.25],[466,.10,'square',.3],[440,.12,'square',.25],[392,.12,'square',.25],[349,.18,'square',.25]], 112); }
-    function build(){ melody([[262,.10,'triangle',.22],[330,.10,.22],[392,.10,.25],[523,.20,.28]], 110); }
-    function purchase(){ melody([[330,.12,'sine',.24],[392,.12,'sine',.26],[494,.14,'sine',.28],[659,.18,'sine',.3]], 108); }
-    function tension(){ melody([[196,.10,'sawtooth',.25],[220,.10,.25],[262,.10,.25],[0,.05],[262,.10,.25],[220,.10,.25],[196,.10,.25]], 128); }
-    function win(){ melody([[392,.12,'sine',.26],[523,.12,'sine',.28],[659,.14,'sine',.3],[784,.18,'sine',.32]], 100); }
-    function stop(){ if(timer){ clearInterval(timer); timer=null; } curr=null; }
-    function setVol(v){ bus.gain.value = v; }
-    return {ambient,auction,build,purchase,tension,win,stop,setVol};
-})();
-
-function toast(msg){
-    const t=$('#toast'); t.textContent=msg; t.style.display='block';
-    setTimeout(()=>t.style.display='none', 1600);
-}
-
-/* =============================== Données plateau FR =============================== */
-const COLORS = {BROWN:'#8b4513', LIGHTBLUE:'#87cefa', PINK:'#ff69b4', ORANGE:'#ff8c00', RED:'#ef4444', YELLOW:'#facc15', GREEN:'#10b981', DARKBLUE:'#1e3a8a'};
-const HOUSECOST = {BROWN:50,LIGHTBLUE:50,PINK:100,ORANGE:100,RED:150,YELLOW:150,GREEN:200,DARKBLUE:200};
-const HOTELCOST = {BROWN:500,LIGHTBLUE:500,PINK:1000,ORANGE:1000,RED:1500,YELLOW:1500,GREEN:2000,DARKBLUE:2000};
-const TOWERCOST = 10000; // Un coût arbitraire pour la Tour Eiffel
-const STATION_PRICE = 200, UTILITY_PRICE = 150;
-const BOARD = [
-    {id:0, type:'go', name:'Départ'},
-    // Le loyer de base (terrain nu) est la première valeur du tableau rent.
-    // Niveaux de loyer pour le mode Tour Eiffel (10 niveaux de construction) :
-    // rent[0]=terrain nu, rent[1]=1 maison ... rent[4]=4 maisons, rent[5]=1 hôtel,
-    // rent[6]=2 hôtels, rent[7]=3 hôtels, rent[8]=4 hôtels, rent[9]=5 hôtels, rent[10]=Tour Eiffel
-    {id:1, type:'prop', group:'BROWN', name:'Boulevard de Belleville', price:60, rent:[2, 10, 30, 90, 160, 250, 625, 1875, 5625, 10000, 15625]},
-    {id:2, type:'comm', name:'Caisse de communauté'},
-    {id:3, type:'prop', group:'BROWN', name:'Rue Lecourbe', price:60, rent:[4, 20, 60, 180, 320, 500, 1250, 3750, 11250, 20000, 31250]},
-    {id:4, type:'tax', name:'Impôt sur le revenu', amount:200},
-    {id:5, type:'station', name:'Gare Montparnasse', price:STATION_PRICE},
-    {id:6, type:'prop', group:'LIGHTBLUE', name:'Rue de Vaugirard', price:100, rent:[6,30,90,270,400,550]},
-    {id:7, type:'chance', name:'Chance'},
-    {id:8, type:'prop', group:'LIGHTBLUE', name:'Rue de Courcelles', price:100, rent:[6,30,90,270,400,550]},
-    {id:9, type:'prop', group:'LIGHTBLUE', name:'Avenue de la République', price:120, rent:[8,40,100,300,450,600]},
-    {id:10, type:'jail', name:'Simple visite / Prison'},
-    {id:11, type:'prop', group:'PINK', name:'Boulevard de la Villette', price:140, rent:[10,50,150,450,625,750]},
-    {id:12, type:'utility', name:"Compagnie d'Électricité", price:UTILITY_PRICE},
-    {id:13, type:'prop', group:'PINK', name:'Avenue de Neuilly', price:140, rent:[10,50,150,450,625,750]},
-    {id:14, type:'prop', group:'PINK', name:'Rue de Paradis', price:160, rent:[12,60,180,500,700,900]},
-    {id:15, type:'station', name:'Gare de Lyon', price:STATION_PRICE},
-    {id:16, type:'prop', group:'ORANGE', name:'Avenue Mozart', price:180, rent:[14,70,200,550,750,950]},
-    {id:17, type:'comm', name:'Caisse de communauté'},
-    {id:18, type:'prop', group:'ORANGE', name:'Boulevard Saint-Michel', price:180, rent:[14,70,200,550,750,950]},
-    {id:19, type:'prop', group:'ORANGE', name:'Place Pigalle', price:200, rent:[16,80,220,600,800,1000]},
-    {id:20, type:'free', name:'Parc Gratuit'},
-    {id:21, type:'prop', group:'RED', name:'Avenue Matignon', price:220, rent:[18,90,250,700,875,1050]},
-    {id:22, type:'chance', name:'Chance'},
-    {id:23, type:'prop', group:'RED', name:'Boulevard Malesherbes', price:220, rent:[18,90,250,700,875,1050]},
-    {id:24, type:'prop', group:'RED', name:'Avenue Henri-Martin', price:240, rent:[20,100,300,750,925,1100]},
-    {id:25, type:'station', name:'Gare du Nord', price:STATION_PRICE},
-    {id:26, type:'prop', group:'YELLOW', name:'Faubourg Saint-Honoré', price:260, rent:[22,110,330,800,975,1150]},
-    {id:27, type:'prop', group:'YELLOW', name:'Place de la Bourse', price:260, rent:[22,110,330,800,975,1150]},
-    {id:28, type:'utility', name:'Compagnie des Eaux', price:UTILITY_PRICE},
-    {id:29, type:'prop', group:'YELLOW', name:'Rue La Fayette', price:280, rent:[24,120,360,850,1025,1200]},
-    {id:30, type:'gotojail', name:'Allez en prison'},
-    {id:31, type:'prop', group:'GREEN', name:'Avenue de Breteuil', price:300, rent:[26,130,390,900,1100,1275]},
-    {id:32, type:'prop', group:'GREEN', name:'Avenue Foch', price:300, rent:[26,130,390,900,1100,1275]},
-    {id:33, type:'comm', name:'Caisse de communauté'},
-    {id:34, type:'prop', group:'GREEN', name:'Boulevard des Capucines', price:320, rent:[28,150,450,1000,1200,1400]},
-    {id:35, type:'station', name:'Gare Saint-Lazare', price:STATION_PRICE},
-    {id:36, type:'chance', name:'Chance'},
-    {id:37, type:'prop', group:'DARKBLUE', name:'Avenue des Champs-Élysées', price:350, rent:[35,175,500,1100,1300,1500]},
-    {id:38, type:'tax', name:'Taxe de luxe', amount:100},
-    {id:39, type:'prop', group:'DARKBLUE', name:'Rue de la Paix', price:400, rent:[50,200,600,1400,1700,2000]}
-];
-
-const CHANCE = [
-    {text:"Avancez jusqu'à la case Départ. Recevez 200€.", effect:p=>moveTo(p,0,true)},
-    {text:"Rendez-vous à la Gare de Lyon. Si vous passez par la case Départ, recevez 200€.", effect:p=>moveTo(p,15,true)},
-    {text:"Allez en Prison. Ne passez pas par la case Départ.", effect:p=>goToJail(p)},
-    {text:"Votre immeuble et votre prêt rapportent. Recevez 150€.", effect:p=>money(p,150)},
-    {text:"Vous êtes libéré de prison. Cette carte peut être conservée.", effect:p=>giveGetOutOfJail(p)},
-    {text:"Faites des réparations : 25€ par maison, 100€ par hôtel.", effect:p=>repairs(p,25,100)},
-    {text:"Reculez de 3 cases.", effect:p=>advance(p,-3)},
-    {text:"Vous avez gagné le prix de mots croisés. Recevez 100€.", effect:p=>money(p,100)},
-    {text:"Amende pour excès de vitesse: payez 15€.", effect:p=>money(p,-15)},
-    {text:"Avancez jusqu'à la Rue de la Paix.", effect:p=>moveTo(p,39,true)},
-    {text:"Avancez à l'Avenue Henri-Martin. Si vous passez par Départ, recevez 200€.", effect:p=>moveTo(p,24,true)},
-    {text:"Allez à la compagnie la plus proche…", effect:p=>nearestUtility(p)},
-    {text:"Allez à la gare la plus proche…", effect:p=>nearestStation(p)},
-    {text:"Payez pour frais de scolarité: 150€.", effect:p=>money(p,-150)},
-    {text:"Votre banque vous verse un dividende de 50€.", effect:p=>money(p,50)},
-    {text:"Vous êtes élu président du conseil. Payez à chaque joueur 50€.", effect:p=>payEach(p,-50)},
-];
-const COMMUNITY = [
-    {text:"Erreur de la banque en votre faveur. Recevez 200€.", effect:p=>money(p,200)},
-    {text:"Allez en Prison.", effect:p=>goToJail(p)},
-    {text:"Payez l'hôpital: 100€.", effect:p=>money(p,-100)},
-    {text:"Payez votre assurance-vie: 50€.", effect:p=>money(p,-50)},
-    {text:"Rendez-vous à la case Départ. Recevez 200€.", effect:p=>moveTo(p,0,true)},
-    {text:"Recevez 25€ pour vos services.", effect:p=>money(p,25)},
-    {text:"Vous héritez de 100€.", effect:p=>money(p,100)},
-    {text:"Recevez 10€ de revenus sur vos placements.", effect:p=>money(p,10)},
-    {text:"Payez une amende de 10€ ou tirez une carte Chance.", effect:p=>communityOrChance(p)},
-    {text:"Vous avez gagné le 2e prix de beauté. Recevez 10€.", effect:p=>money(p,10)},
-    {text:"Naissance dans la famille. Recevez 100€.", effect:p=>money(p,100)},
-    {text:"Frais médicaux: payez 50€.", effect:p=>money(p,-50)},
-    {text:"Vous trouvez 20€.", effect:p=>money(p,20)},
-    {text:"Retournez trois cases en arrière.", effect:p=>advance(p,-3)},
-    {text:"Vous êtes libéré de prison. Cette carte peut être conservée.", effect:p=>giveGetOutOfJail(p)},
-    {text:"Versez 50€ à chaque joueur.", effect:p=>payEach(p,-50)},
-];
-
-/* =============================== État =============================== */
-const State = {
-    started:false,
-    paused:false,
-    turn:1,
-    current:0,
-    players:[], // {id,name,token,isAI,pos,cash,properties:[],mortgaged:[],jail,gojf,bankrupt, teamId?:number}
-    teams:[], // [{id, name, cash, properties:[]}]
-    settings:{
-        monopolyReq:true,
-        jackpot:false,
-        aiLevel:'Modéré',
-        turnSeconds:30,
-        gameMinutes:0,
-        teams:0,
-        mission:'none',
-        houseShortage: false,
-        evenBuild: false,
-        draftProps: 0,
-        randomEvents: false,
-        forcedSale: false,
-        eiffelMode: false,
-        sellPriceDecay: 0,
-        forcedSaleTurns: 5,
-        forcedSaleThreshold: 200
-    },
-    sellModifier: 1.0,
-    pool: { houses: 32, hotels: 12 },
-    activeEvents: { boom: 0, strike: 0 },
-    deck:{chance:[], community:[]},
-    pot:0,
-    lastDice:[0,0],
-    canRoll:true,
-    doublesStreak:0,
-    mustAuction:null,
-    gameOver:false,
-    aiMemory:{} // aiId -> { partnerId -> trustScore }
-};
-
-const $ = sel => document.querySelector(sel);
-const logEl = $('#log');
-function log(msg){
-    const t=document.createElement('div'); t.innerHTML=msg; logEl.appendChild(t); logEl.scrollTop=logEl.scrollHeight;
-}
-function moneyFmt(n){ return n.toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}); }
-
-/* =============================== UI Joueurs + Galerie Propriétés =============================== */
-function pawnColor(token){ return {chat:'#ef4444',moto:'#22c55e',voiture:'#3b82f6',chien:'#eab308',bateau:'#a855f7',avion:'#14b8a6'}[token]||'#2563eb'; }
-function renderPlayers(){
-    const wrap = $('#players');
-    wrap.innerHTML='';
-    const teamMode = State.settings.teams>0;
-    State.players.forEach((p,i)=>{
-        const wallet = getWallet(p);
-        const own = wallet.properties.length;
-        const monopol = getMonopoliesWallet(wallet).length;
-        const teamTag = teamMode ? `<span class="tag">Équipe ${p.teamId+1}</span>` : '';
-        const who = p.isAI?('IA '+State.settings.aiLevel):'Humain';
-        const pEl = document.createElement('div');
-        pEl.className='player';
-        pEl.style.borderLeftColor = pawnColor(p.token);
-        pEl.innerHTML = `
-            <div class="row"><b>${p.name}</b><span class="tag">${who}</span>${teamTag}</div>
-            <div class="row"><span>Argent</span><span class="money monos">${moneyFmt(wallet.cash)}</span></div>
-            <div class="fine">Propriétés : ${own} — Monopoles : ${monopol}</div>
-        `;
-        wrap.appendChild(pEl);
-    });
-    $('#turnTag').textContent = `Tour ${State.turn} — ${State.players[State.current]?.name??''}`;
-    renderPropGallery();
-}
-function renderPropGallery(){
-    const g = $('#propGallery');
-    g.innerHTML='';
-    const p = currentPlayer();
-    if(!p) return;
-    const wallet = getWallet(p);
-    wallet.properties.forEach(id=>{
-        const t = BOARD[id]; if(!t) return;
-        const chip = document.createElement('div');
-        chip.className='chip';
-        const color = t.group?COLORS[t.group]:'#ddd';
-        chip.innerHTML = `<span class="sw" style="background:${color}"></span><span>${t.name}</span>`;
-        chip.onclick = ()=> showPropertyCard(t, p);
-        g.appendChild(chip);
-    });
-}
-
-/* =============================== Start form =============================== */
-const TOKENS = ['chat','moto','voiture','chien','bateau','avion'];
-function buildStartForm(){
-    const n = parseInt($('#numPlayers').value||'2');
-    const cfg = $('#playersCfg');
-    cfg.innerHTML='';
-    for(let i=0;i<n;i++){
-        const card = document.createElement('div');
-        card.className='field';
-        card.innerHTML = `
-            <div class="row" style="justify-content:space-between">
-                <label>Joueur ${i+1}</label>
-                <div class="seg" role="group">
-                    <button class="segbtn" data-ai="0" data-i="${i}">Humain</button>
-                    <button class="segbtn" data-ai="1" data-i="${i}">IA</button>
-                </div>
-            </div>
-            <div class="grid cols-3" style="margin-top:8px">
-                <div>
-                    <label>Nom</label>
-                    <input type="text" id="pname_${i}" value="${i===0?'J1':i===1?'J2':'J'+(i+1)}"/>
-                </div>
-                <div>
-                    <label>Pion</label>
-                    <select id="ptoken_${i}">${TOKENS.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
-                </div>
-                <div>
-                    <label>Cash initial</label>
-                    <input type="number" id="pcash_${i}" value="1500" min="0" step="50"/>
-                </div>
-            </div>
-        `;
-        cfg.appendChild(card);
-    }
-    setTimeout(()=>{
-        const segs = cfg.querySelectorAll('.seg');
-        segs.forEach((s,idx)=>{
-            const btns = s.querySelectorAll('.segbtn');
-            const defAI = (idx===1);
-            btns[defAI?1:0].classList.add('active');
-        });
-    },0);
-}
-$('#numPlayers').addEventListener('input', buildStartForm);
-buildStartForm();
-
-/* =============================== Board (Canvas) + Maisons/Hôtels + Animation build =============================== */
-const board = $('#board'), ctx = board.getContext('2d');
-function drawBoard(){
-    const W = board.width, H = board.height, M = 70;
-    ctx.clearRect(0,0,W,H);
-    ctx.fillStyle = '#e9ffe9';
-    ctx.fillRect(M,M,W-2*M,H-2*M);
-    ctx.strokeStyle = '#0a5c1e';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(M,M,W-2*M,H-2*M);
-
-    const tileW = (W-2*M)/9, tileH = (H-2*M)/9;
-
-    function drawTile(x,y,w,h,space,rot=0){
-        ctx.save();
-        ctx.translate(x+w/2,y+h/2);
-        ctx.rotate(rot);
-
-        ctx.fillStyle='#fff';
-        ctx.fillRect(-w/2,-h/2,w,h);
-        ctx.strokeStyle='#111';
-        ctx.lineWidth=2;
-        ctx.strokeRect(-w/2,-h/2,w,h);
-
-        if(space.type==='prop'){
-            ctx.fillStyle = COLORS[space.group];
-            ctx.fillRect(-w/2,-h/2,w,16);
-        }
-        if(['go','jail','free','gotojail'].includes(space.type)){
-            ctx.fillStyle = '#f1f5f9';
-            ctx.fillRect(-w/2,-h/2,w,h);
-            ctx.strokeStyle='#111';
-            ctx.strokeRect(-w/2,-h/2,w,h);
+        function positionFor(index) {
+            if (index <= 10) {
+                return { row: 11, col: 11 - index };
+            }
+            if (index <= 20) {
+                return { row: 11 - (index - 10), col: 1 };
+            }
+            if (index <= 30) {
+                return { row: 1, col: 1 + (index - 20) };
+            }
+            return { row: 1 + (index - 30), col: 11 };
         }
 
-        ctx.fillStyle = '#111';
-        ctx.font = '12px system-ui';
-        wrapText(ctx, space.name, -w/2+6, -h/2+26, w-12, 13);
+        function edgeFor(index) {
+            if (index === 0) return 'corner bottom-right';
+            if (index === 10) return 'corner bottom-left';
+            if (index === 20) return 'corner top-left';
+            if (index === 30) return 'corner top-right';
+            if (index < 10) return 'bottom';
+            if (index < 20) return 'left';
+            if (index < 30) return 'top';
+            return 'right';
+        }
 
-        // Maisons / Hôtels / Tour Eiffel
-        if(space.houses && space.houses > 0){
-            const n = space.houses; // 1-4:maisons, 5-9:hôtels, 10:tour
-            const isTower = (State.settings.eiffelMode && n === 10);
-            const isHotel = (n >= 5);
-            const scale = space._buildAnim ? space._buildAnim : 1;
-            const barY = h/2 - 18;
-
-            ctx.save();
-            ctx.translate(0, barY);
-            ctx.scale(scale, scale);
-
-            if (isTower) {
-                ctx.fillStyle = '#6b7280';
-                ctx.strokeStyle = '#111';
-                ctx.lineWidth = 1.5;
-                // Base
-                ctx.fillRect(-8, 0, 16, 4);
-                // Corps
-                ctx.beginPath();
-                ctx.moveTo(-8, 0); ctx.lineTo(-3, -18); ctx.lineTo(3, -18); ctx.lineTo(8, 0);
-                ctx.closePath();
-                ctx.fill(); ctx.stroke();
-                // Sommet
-                ctx.fillRect(-2, -22, 4, 4);
-            } else if (isHotel) {
-                const hotelCount = State.settings.eiffelMode ? (n - 4) : 1; // 1 à 5 hôtels
-                const totalWidth = hotelCount * 14;
-                const startX = -totalWidth / 2;
-                ctx.fillStyle = '#b91c1c';
-                ctx.strokeStyle = '#0f172a';
-                ctx.lineWidth = 1;
-                for(let i=0; i<hotelCount; i++){
-                     const hotelX = startX + i*14;
-                     ctx.fillRect(hotelX, -10, 12, 10);
-                     ctx.strokeRect(hotelX, -10, 12, 10);
+        function renderSquares() {
+            squares.forEach((sq, index) => {
+                const square = document.createElement('div');
+                const pos = positionFor(index);
+                square.style.gridColumn = pos.col;
+                square.style.gridRow = pos.row;
+                square.className = `square ${edgeFor(index)} ${sq.type}`;
+                square.dataset.index = index;
+                square.dataset.name = sq.name;
+                square.dataset.info = sq.info;
+                square.dataset.type = sq.type;
+                if (sq.group) {
+                    square.dataset.group = sq.group;
                 }
-            } else { // Maisons
-                const houseCount = n;
-                const totalWidth = houseCount * 16;
-                const startX = -totalWidth / 2;
-                ctx.fillStyle = '#16a34a';
-                ctx.strokeStyle = '#0f172a';
-                ctx.lineWidth = 1;
-                for(let i=0; i<houseCount; i++){
-                    const houseX = startX + i*16;
-                    ctx.beginPath();
-                    ctx.moveTo(houseX, -10);
-                    ctx.lineTo(houseX + 14, -10);
-                    ctx.lineTo(houseX + 14, 0);
-                    ctx.lineTo(houseX + 7, -5); // Toit
-                    ctx.lineTo(houseX, 0);
-                    ctx.closePath();
-                    ctx.stroke(); ctx.fill();
+                if (sq.price) {
+                    square.dataset.price = sq.price;
                 }
-            }
-            ctx.restore();
-        }
-        ctx.restore();
-    }
-    for(let i=0;i<10;i++){ drawTile(W - M - (i+1)*tileW, H - M - tileH, tileW, tileH, BOARD[i],0); }
-    for(let i=0;i<10;i++){ drawTile(M, H - M - (i+1)*tileH, tileW, tileH, BOARD[10+i],Math.PI/2); }
-    for(let i=0;i<10;i++){ drawTile(M + i*tileW, M, tileW, tileH, BOARD[20+i],Math.PI); }
-    for(let i=0;i<10;i++){ drawTile(W - M - tileW, M + i*tileH, tileW, tileH, BOARD[30+i],-Math.PI/2); }
-    drawPawns();
-}
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-    const words = text.split(' '); let line = '', yy=y;
-    for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        if (ctx.measureText(testLine).width > maxWidth && n > 0) {
-            ctx.fillText(line, x, yy); line = words[n] + ' '; yy += lineHeight;
-        } else line = testLine;
-    }
-    ctx.fillText(line, x, yy);
-}
-function tileCenter(pos){
-    const W = board.width, H = board.height, M=70, tileW=(W-2*M)/9, tileH=(H-2*M)/9;
-    if(pos<=10){ const i=pos; return [W - M - (i+0.5)*tileW, H - M - tileH/2]; }
-    if(pos<=20){ const i=pos-10; return [M + tileW/2, H - M - (i+0.5)*tileH]; }
-    if(pos<=30){ const i=pos-20; return [M + (i+0.5)*tileW, M + tileH/2]; }
-    const i=pos-30; return [W - M - tileW/2, M + (i+0.5)*tileH];
-}
-function drawPawns(){
-    const P = State.players;
-    P.forEach((p,idx)=>{
-        const [x,y] = tileCenter(p.pos);
-        ctx.save();
-        ctx.translate(x,y);
-        const offx = (idx%3 -1)*10, offy = (Math.floor(idx/3)-1)*10;
-        ctx.translate(offx,offy);
-        ctx.fillStyle = pawnColor(p.token);
-        ctx.strokeStyle = '#111';
-        ctx.lineWidth=2;
-        ctx.beginPath();
-        ctx.arc(0,0,10,0,Math.PI*2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.font='bold 10px system-ui';
-        ctx.fillStyle='#111';
-        ctx.fillText(p.token[0].toUpperCase(), -4, 4);
-        ctx.restore();
-    });
-}
-function animateBuildOnTile(tileId){
-    const t = BOARD[tileId]; if(!t) return;
-    t._buildAnim = 0.2;
-    const step = ()=>{
-        t._buildAnim += 0.15;
-        if(t._buildAnim>=1){
-            delete t._buildAnim;
-            drawBoard();
-            return;
-        }
-        drawBoard();
-        requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-}
-
-/* =============================== Aide équipe (wallet partagé cash + build autorisé coéquipiers) =============================== */
-function getWallet(p){
-    if(State.settings.teams>0 && typeof p.teamId==='number'){ return State.teams[p.teamId]; }
-    return p;
-}
-function addPropToWallet(p, propId){
-    const w = getWallet(p);
-    if(!w.properties.includes(propId)) w.properties.push(propId);
-}
-function removePropFromWallet(p, propId){
-    const w = getWallet(p); w.properties = w.properties.filter(id=>id!==propId);
-}
-function walletOwnsGroup(p, group){
-    const tiles = BOARD.filter(s=>s.group===group).map(s=>s.id);
-    const w = getWallet(p);
-    return tiles.every(id=> w.properties.includes(id) );
-}
-
-/* =============================== Core jeu =============================== */
-function shuffle(a){return a.sort(()=>Math.random()-0.5);}
-function startGame(){
-    // paramètres
-    const n = parseInt($('#numPlayers').value||'2');
-    const aiLevel = $('#aiDifficulty').value;
-    State.settings = {
-        monopolyReq: $('#optMonopolyReq').value==='1',
-        jackpot: $('#optJackpot').value==='1',
-        aiLevel,
-        turnSeconds: parseInt($('#optTurnTimer').value||'30'),
-        gameMinutes: parseInt($('#optGameMinutes').value||'0'),
-        teams: parseInt($('#optTeams').value||'0'),
-        mission: $('#optMission').value,
-        houseShortage: $('#optShortage').value === '1',
-        evenBuild: $('#optEvenBuild').value === '1',
-        draftProps: parseInt($('#optDraft').value || '0'),
-        randomEvents: $('#optEvents').value === '1',
-        forcedSale: $('#optForcedSale').value === '1',
-        eiffelMode: $('#optEiffel').value === '1',
-        sellPriceDecay: parseFloat($('#optSellDecay').value || '0') / 100,
-        forcedSaleTurns: 5,
-        forcedSaleThreshold: 200
-    };
-    State.sellModifier = 1.0;
-    State.players = [];
-    const cfg = $('#playersCfg');
-    for(let i=0;i<n;i++){
-        const name = $('#pname_'+i).value.trim()||('J'+(i+1));
-        const token = $('#ptoken_'+i).value;
-        const cash = parseInt($('#pcash_'+i).value||'1500');
-        const isAI = cfg.querySelectorAll('.seg')[i].querySelectorAll('.segbtn')[1].classList.contains('active');
-        State.players.push({id:i,name,token,isAI,pos:0,cash,properties:[],mortgaged:[],jail:0,gojf:0,bankrupt:false});
-    }
-
-    if (State.settings.eiffelMode) {
-        log("🗼 <b>Mode Tour Eiffel activé !</b> Application des loyers étendus.");
-        const baseRentData = [2, 10, 30, 90, 160, 250, 625, 1875, 5625, 10000, 15625];
-        const baseRentValue = 2; // From Boulevard de Belleville
-
-        BOARD.forEach(prop => {
-            if (prop.type === 'prop') {
-                const factor = prop.rent[0] / baseRentValue;
-                const newRent = baseRentData.map(r => Math.round(r * factor));
-                newRent[0] = prop.rent[0]; // Preserve original base rent to avoid float errors
-                prop.rent = newRent;
-            }
-        });
-    }
-
-
-    // Équipes
-    State.teams = [];
-    if(State.settings.teams>0){
-        for(let t=0;t<State.settings.teams;t++){ State.teams.push({id:t,name:'Équipe '+(t+1), cash:0, properties:[]}); }
-        State.players.forEach((p,i)=>{
-            p.teamId = i % State.settings.teams;
-            const team = State.teams[p.teamId];
-            team.cash += p.cash;
-            p.cash = 0; // cash partagé → mis en banque d’équipe
-        });
-    }
-
-    // decks
-    State.deck.chance = shuffle([...CHANCE]);
-    State.deck.community = shuffle([...COMMUNITY]);
-    State.pool = { houses: 32, hotels: 12 };
-    State.activeEvents = { boom: 0, strike: 0 };
-    State.turn=1; State.current=0; State.pot=0; State.doublesStreak=0;
-    State.canRoll=true; State.gameOver=false; State.aiMemory = {};
-    State.started=true; State.paused=false;
-
-    // Mode Draft
-    if (State.settings.draftProps > 0) {
-        log("🚀 <b>Mode Draft activé.</b> Distribution des propriétés...");
-        const unowned = BOARD.filter(s => isProp(s) && !ownerOf(s.id)).map(s => s.id);
-        shuffle(unowned);
-        for (let i = 0; i < State.settings.draftProps; i++) {
-            State.players.forEach(p => {
-                if (unowned.length > 0) {
-                    const propId = unowned.pop();
-                    addPropToWallet(p, propId);
-                    BOARD[propId].owner = p.id;
-                    BOARD[propId].houses = 0;
-                    log(`📜 ${p.name} reçoit <b>${BOARD[propId].name}</b>.`);
-                }
-            });
-        }
-    }
-
-    renderPlayers();
-    drawBoard();
-    log(`<b>Partie lancée</b> — IA : ${aiLevel}`);
-    $('#startModal').style.display='none';
-    enableUIForCurrent();
-    Music.ambient();
-    setupTurnTimer();
-}
-function currentPlayer(){ return State.players[State.current]; }
-function nextPlayer(){
-    if(State.doublesStreak>0 && State.doublesStreak<3){
-        State.canRoll=true;
-        enableUIForCurrent();
-        setupTurnTimer();
-        return;
-    }
-    let i = State.current;
-    for(let k=0;k<State.players.length;k++){
-        i=(i+1)%State.players.length;
-        if(!State.players[i].bankrupt) break;
-    }
-    State.current = i;
-    if (i === 0) State.turn++;
-
-    State.doublesStreak=0;
-    State.canRoll=true;
-    handleTurnStartEvents(); // Gérer les événements de début de tour
-    enableUIForCurrent();
-    renderPlayers();
-    setupTurnTimer();
-
-    // IA proactive : peut initier un échange
-    const p = currentPlayer();
-    if(p.isAI) setTimeout(()=>aiMaybeProposeTrade(p), 600);
-}
-function enableUIForCurrent(){
-    const p = currentPlayer();
-    // BUG CORRIGÉ : Un joueur en prison DOIT pouvoir lancer les dés. La condition p.jail > 0 a été retirée.
-    $('#btnRoll').disabled = !State.canRoll || State.paused || State.gameOver;
-    $('#btnEnd').disabled = State.canRoll || State.paused || State.gameOver;
-    $('#btnBuy').disabled = true;
-    $('#btnBuild').disabled = State.paused;
-    $('#btnAuction').disabled=true;
-}
-
-/* =============================== Événements, Timers & Modes de jeu =============================== */
-let perTurnTick=null, partyEndAt=null;
-function setupTurnTimer(){
-    clearInterval(perTurnTick);
-    const turnSec = State.settings.turnSeconds;
-    if(State.settings.gameMinutes>0 && !partyEndAt){
-        partyEndAt = Date.now() + State.settings.gameMinutes*60*1000;
-    }
-    if(turnSec>0){
-        let left = turnSec;
-        $('#turnClock').textContent = `⏱️ ${left}s`;
-        perTurnTick = setInterval(()=>{
-            if(State.paused) return;
-            left--;
-            $('#turnClock').textContent = `⏱️ ${left}s`;
-            if(left<=0){
-                clearInterval(perTurnTick);
-                toast("Temps de tour écoulé.");
-                $('#btnEnd').click();
-            }
-        }, 1000);
-    } else {
-        $('#turnClock').textContent = `⏱️ --`;
-    }
-}
-function maybeEndByTime(){
-    if(State.settings.gameMinutes>0 && partyEndAt && Date.now()>=partyEndAt && !State.gameOver){
-        State.gameOver = true;
-        const scores = computeNetValues();
-        scores.sort((a,b)=>b.value-a.value);
-        log(`⏰ Fin du temps ! Gagnant : <b>${scores[0].name}</b> avec valeur nette ${moneyFmt(scores[0].value)}.`);
-        SFX.win();
-        Music.win();
-    }
-}
-function computeNetValues(){
-    const valProp = (id)=>{
-        const t=BOARD[id];
-        let v = priceOf(t);
-        if(t.houses) v += (t.houses===5?5: t.houses)* (HOUSECOST[t.group]||0);
-        return v;
-    };
-    if(State.settings.teams>0){
-        return State.teams.map(team=>{
-            const value = team.cash + team.properties.reduce((a,id)=>a+valProp(id),0);
-            return {name:team.name, value};
-        });
-    }
-    return State.players.filter(p=>!p.bankrupt).map(p=>{
-        const w = getWallet(p);
-        const value = w.cash + w.properties.reduce((a,id)=>a+valProp(id),0);
-        return {name:p.name,value};
-    });
-}
-function handleTurnStartEvents() {
-    const p = currentPlayer();
-    // Au début d'un nouveau round complet (quand c'est au tour du joueur 0)
-    if (p.id === 0) {
-        // Décompte des événements
-        let eventActive = false;
-        if (State.activeEvents.boom > 0) { State.activeEvents.boom--; eventActive = true; }
-        if (State.activeEvents.strike > 0) { State.activeEvents.strike--; eventActive = true; }
-        if (!eventActive) hideEventPill();
-
-        // Vérification Vente Forcée
-        if (State.settings.forcedSale && State.turn > 1 && State.turn % State.settings.forcedSaleTurns === 0) {
-            log(`🚨 Tour ${State.turn}: Vérification Vente Forcée (seuil ${moneyFmt(State.settings.forcedSaleThreshold)}).`);
-            State.players.forEach(pl => {
-                if (!pl.bankrupt && getWallet(pl).cash < State.settings.forcedSaleThreshold) {
-                    log(`⚠️ ${pl.name} est sous le seuil et doit vendre/hypothéquer.`);
-                    toast(`${pl.name}, vous devez vendre/hypothéquer !`);
-                }
-            });
-        }
-    }
-    // Déclenchement d'un événement aléatoire
-    if (State.settings.randomEvents && Math.random() < 0.05) { // 5% de chance par tour
-        triggerRandomEvent();
-    }
-}
-function triggerRandomEvent() {
-    const events = ['boom', 'strike'];
-    const event = events[randInt(0, events.length - 1)];
-    if (event === 'boom' && State.activeEvents.boom === 0) {
-        State.activeEvents.boom = 2; // Dure 2 rounds complets
-        log("📈 Événement : Marché haussier ! Les loyers sont augmentés de 25% pour 2 tours.");
-        showEventPill("📈 Marché haussier");
-    } else if (event === 'strike' && State.activeEvents.strike === 0) {
-        State.activeEvents.strike = 1; // Dure 1 round complet
-        log("罢 Grève SNCF ! Les gares ne rapportent aucun loyer pour 1 tour.");
-        showEventPill("罢 Grève SNCF");
-    }
-}
-function showEventPill(text) {
-    $('#eventText').textContent = text;
-    $('#eventPill').style.display = 'flex';
-}
-function hideEventPill() {
-    $('#eventPill').style.display = 'none';
-}
-
-
-/* =============================== Déplacements / cases =============================== */
-function moveSteps(p, steps){
-    const old = p.pos;
-    let pos = (p.pos + steps)%40;
-    if(pos<0) pos+=40;
-    if(steps>0 && (old+steps)>=40){
-        money(p, 200);
-        log(`💰 ${p.name} passe par <b>Départ</b> et reçoit <b>${moneyFmt(200)}</b>.`);
-        if (State.settings.sellPriceDecay > 0) {
-            State.sellModifier *= (1 - State.settings.sellPriceDecay);
-            log(`📉 Le prix de revente des bâtiments est maintenant à <b>${(State.sellModifier*100).toFixed(1)}%</b> de sa valeur de base.`);
-        }
-        SFX.rent();
-    }
-    p.pos = pos;
-    drawBoard();
-    landed(p);
-}
-function moveTo(p, idx, payGo=false){
-    const old = p.pos;
-    p.pos = idx;
-    if(payGo && (idx<old)){
-        money(p,200);
-        log(`💰 ${p.name} reçoit <b>${moneyFmt(200)}</b> en passant par <b>Départ</b>.`);
-        SFX.rent();
-    }
-    drawBoard();
-    landed(p);
-}
-function advance(p, delta){ moveSteps(p, delta); }
-function goToJail(p){
-    p.pos = 10;
-    p.jail = 3;
-    State.doublesStreak=0;
-    State.canRoll=false;
-    drawBoard();
-    log(`🚔 ${p.name} va en <b>Prison</b> (3 tours).`);
-    SFX.jail();
-    $('#btnEnd').disabled=false;
-}
-function giveGetOutOfJail(p){
-    p.gojf++;
-    log(`🃏 ${p.name} obtient une carte <b>Sortie de prison</b>.`);
-}
-function money(p, amount){
-    const w = getWallet(p);
-    w.cash += amount;
-    if(amount>=0) log(`💵 ${p.name} reçoit <b>${moneyFmt(amount)}</b>.`);
-    else log(`💸 ${p.name} paie <b>${moneyFmt(-amount)}</b>.`);
-
-    if(State.settings.jackpot && amount<0){
-        State.pot += -amount;
-        log(`🎁 Jackpot → <b>${moneyFmt(State.pot)}</b>.`);
-    }
-    checkBankrupt(p);
-    maybeCheckMission(p);
-}
-function repairs(p, perHouse, perHotel){
-    let houses=0, hotels=0;
-    const w = getWallet(p);
-    // BUG CORRIGÉ : La logique de calcul a été simplifiée et rendue compatible avec le mode Tour Eiffel.
-    // Une propriété a soit des maisons (niveau 1-4), soit un "hôtel" (niveau 5+).
-    w.properties.forEach(id => {
-        const pr = propById(id);
-        if(pr.houses && pr.houses > 0 && pr.type === 'prop') {
-            if (pr.houses >= 5) { // Est considéré comme un hôtel pour les réparations
-                hotels++;
-            } else { // Ce sont des maisons
-                houses += pr.houses;
-            }
-        }
-    });
-    const total = houses * perHouse + hotels * perHotel;
-    if (total > 0) {
-        money(p, -total);
-        log(`🛠️ Réparations : ${houses} maison(s), ${hotels} hôtel(s) → <b>${moneyFmt(total)}</b>.`);
-    }
-}
-function payEach(p, amount){
-    State.players.forEach(q=>{
-        if(q.id!==p.id && !q.bankrupt){
-            money(q, -amount);
-            money(p, amount);
-        }
-    });
-}
-
-/* =============================== Propriétés helpers =============================== */
-function isProp(s){ return s.type==='prop'||s.type==='station'||s.type==='utility'; }
-function propById(id){ return BOARD[id]; }
-function ownerOf(posId){
-    for(const pl of State.players){
-        if(getWallet(pl).properties.includes(posId)) return pl;
-    }
-    return null;
-}
-function groupTiles(group){ return BOARD.filter(s=>s.group===group).map(s=>s.id); }
-function countStationsWallet(w){ return w.properties.filter(id=>BOARD[id].type==='station').length; }
-function countUtilitiesWallet(w){ return w.properties.filter(id=>BOARD[id].type==='utility').length; }
-function priceOf(s){
-    if(s.type==='station') return STATION_PRICE;
-    if(s.type==='utility') return UTILITY_PRICE;
-    return s.price;
-}
-function rentAmount(tile, owner){
-    const w = getWallet(owner);
-    let rent = 0;
-
-    if(tile.type==='station'){
-        if (State.activeEvents.strike > 0) return 0;
-        const n = countStationsWallet(w);
-        rent = [25,50,100,200][n-1]||25;
-    } else if(tile.type==='utility'){
-        const roll = State.lastDice[0]+State.lastDice[1];
-        const n = countUtilitiesWallet(w);
-        rent = roll*(n===2?10:4);
-    } else {
-        const pr = tile;
-        const monopoly = walletOwnsGroup(owner, pr.group);
-        const houses = pr.houses||0;
-        if(houses===0){
-            let base = pr.rent[0];
-            // Le double loyer sur monopole ne s'applique que s'il n'y a pas de construction,
-            // et n'est pas cumulable avec les loyers améliorés du mode Eiffel.
-            if(monopoly && pr.rent.length <= 6) base *= 2;
-            rent = base;
-        } else {
-            rent = pr.rent[houses];
-        }
-    }
-
-    if(State.activeEvents.boom > 0) {
-        const oldRent = rent;
-        rent = Math.round(rent * 1.25);
-        if (oldRent > 0) log(`📈 Marché haussier ! Loyer de ${moneyFmt(oldRent)} augmenté à <b>${moneyFmt(rent)}</b>.`);
-    }
-
-    return rent;
-}
-function getMonopoliesWallet(w){
-    const groups = [...new Set(BOARD.filter(s=>s.group).map(s=>s.group))];
-    return groups.filter(g=> groupTiles(g).every(id=> w.properties.includes(id)) );
-}
-
-/* =============================== Atterrissage =============================== */
-function landed(p){
-    const s = BOARD[p.pos];
-    $('#btnBuy').disabled = true;
-    $('#btnAuction').disabled=true;
-    if(State.gameOver) return;
-
-    switch(s.type){
-        case 'go': log(`🟩 ${p.name} est sur <b>Départ</b>.`); break;
-        case 'tax':
-            log(`🧾 ${p.name} paie <b>${moneyFmt(s.amount)}</b> (${s.name}).`);
-            money(p, -s.amount);
-            break;
-        case 'free':
-            log(`🌳 ${p.name} se repose au <b>Parc Gratuit</b>.`);
-            if(State.settings.jackpot && State.pot>0){
-                const w=getWallet(p);
-                w.cash += State.pot;
-                log(`🎉 Jackpot ! ${p.name} récupère <b>${moneyFmt(State.pot)}</b>.`);
-                SFX.win();
-                State.pot=0;
-            }
-            break;
-        case 'jail':
-            if(p.jail>0) log(`⛓️ ${p.name} est en <b>Prison</b> (${p.jail} tour(s) restant).`);
-            else log(`👮 Simple visite.`);
-            break;
-        case 'gotojail': log(`🚔 ${p.name} doit aller en <b>Prison</b>.`); goToJail(p); break;
-        case 'chance': drawCard('chance', p); break;
-        case 'comm': drawCard('community', p); break;
-        default:
-            if(isProp(s)){
-                const own = ownerOf(s.id);
-                if(!own){
-                    log(`🏠 ${p.name} peut acheter <b>${s.name}</b> pour <b>${moneyFmt(priceOf(s))}</b>.`);
-                    $('#btnBuy').disabled = false;
-                    $('#btnAuction').disabled = false;
-                } else if(own.id===p.id || (State.settings.teams>0 && own.teamId===p.teamId)){
-                    log(`🏠 ${p.name} est chez lui (équipe): <b>${s.name}</b>.`);
+                const inner = document.createElement('div');
+                inner.className = 'inner';
+                if (sq.type === 'property') {
+                    const colorValue = sq.color
+                        ? (sq.color.startsWith('--')
+                            ? getComputedStyle(document.documentElement).getPropertyValue(sq.color).trim()
+                            : sq.color)
+                        : '';
+                    const color = colorValue || '#ddd';
+                    const bar = document.createElement('div');
+                    bar.className = 'color-bar';
+                    bar.style.background = color;
+                    inner.appendChild(bar);
+                    const label = document.createElement('div');
+                    label.className = 'label';
+                    label.textContent = sq.name;
+                    inner.appendChild(label);
+                    const price = document.createElement('div');
+                    price.className = 'price';
+                    price.textContent = sq.price;
+                    inner.appendChild(price);
                 } else {
-                    const rent = rentAmount(s, own);
-                    if (rent > 0) {
-                        money(p, -rent);
-                        money(own, rent);
-                        SFX.rent();
-                        log(`💳 ${p.name} paie un loyer à <b>${own.name}</b> sur <b>${s.name}</b> : <b>${moneyFmt(rent)}</b>.`);
-                    } else {
-                        log(`⛔ Le loyer sur <b>${s.name}</b> est de 0€ (événement en cours).`);
+                    const icon = document.createElement('i');
+                    icon.className = `icon fa-solid ${sq.icon || 'fa-circle'}`;
+                    inner.appendChild(icon);
+                    const label = document.createElement('div');
+                    label.className = 'label';
+                    label.textContent = sq.name;
+                    inner.appendChild(label);
+                    if (sq.price) {
+                        const price = document.createElement('div');
+                        price.className = 'price';
+                        price.textContent = sq.price;
+                        inner.appendChild(price);
                     }
                 }
+                square.appendChild(inner);
+                square.addEventListener('click', () => {
+                    setActive(index);
+                    pushLog(`Inspection de <strong>${sq.name}</strong>.`);
+                });
+                board.appendChild(square);
+            });
+        }
+
+        function setActive(index) {
+            const previous = board.querySelector('.square.active');
+            if (previous) {
+                previous.classList.remove('active');
             }
-    }
-    renderPlayers();
-    $('#btnEnd').disabled = State.canRoll || State.paused || State.gameOver || p.jail>0;
-    maybeEndByTime();
-}
-
-/* =============================== Dés + Règle des doubles =============================== */
-function randInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
-function randRange(min,max){ return Math.random()*(max-min)+min; }
-function animateDice(a,b){
-    const d1=$('#d1'), d2=$('#d2');
-    const rot = (val)=>({1:'rotateX(0deg) rotateY(0deg)',2:'rotateX(0deg) rotateY(-90deg)',3:'rotateX(0deg) rotateY(180deg)',4:'rotateX(0deg) rotateY(90deg)',5:'rotateX(-90deg) rotateY(0deg)',6:'rotateX(90deg) rotateY(0deg)'}[val]);
-    d1.style.transform = `translateZ(0) rotateX(${randInt(1,6)*360}deg) rotateY(${randInt(1,6)*360}deg)`;
-    d2.style.transform = `translateZ(0) rotateX(${randInt(1,6)*360}deg) rotateY(${randInt(1,6)*360}deg)`;
-    setTimeout(()=>{
-        d1.style.transform = rot(a);
-        d2.style.transform = rot(b);
-    }, 600);
-}
-function rollDice(force=null){
-    const p = currentPlayer();
-    if(State.paused || State.gameOver){ toast('En pause…'); return; }
-    if(!State.canRoll){ toast('Dés déjà joués pour ce sous‑tour.'); return; }
-    State.canRoll=false;
-    $('#btnRoll').disabled = true; // Désactive immédiatement pour éviter double-clic
-
-    const [a,b] = [randInt(1,6), randInt(1,6)];
-    animateDice(a,b);
-
-    setTimeout(()=>{
-        State.lastDice=[a,b];
-        const total = a+b;
-        log(`🎲 ${p.name} lance les dés : <b>${a} + ${b} = ${total}</b>.`);
-        SFX.dice();
-
-        if(p.jail>0){
-            if(a===b){
-                log(`🔓 Doubles ! ${p.name} sort de prison.`);
-                p.jail=0;
-                moveSteps(p, total);
-                afterMoveCheckDouble(a,b);
-            } else {
-                p.jail--;
-                log(`⛓️ Pas de doubles. Reste ${p.jail} tour(s).`);
-                $('#btnEnd').disabled=false;
-                renderPlayers();
+            const square = board.querySelector(`.square[data-index="${index}"]`);
+            if (square) {
+                square.classList.add('active');
+                activeIndex = index;
+                updatePanel(square.dataset);
             }
-            return;
         }
 
-        moveSteps(p,total);
-        afterMoveCheckDouble(a,b);
-    }, 900);
-}
-function afterMoveCheckDouble(a,b){
-    const p = currentPlayer();
-    if(a===b){
-        State.doublesStreak++;
-        if(State.doublesStreak>=3){
-            log(`🚨 3 doubles consécutifs ! ${p.name} va en <b>Prison</b>.`);
-            goToJail(p);
-        } else {
-            toast('Double ! Vous pouvez relancer.');
-            SFX.dice();
-            State.canRoll=true;
-            $('#btnRoll').disabled=false; // Réactive le bouton pour le prochain lancer
-            $('#btnEnd').disabled=true;
-        }
-    } else {
-        State.canRoll=false;
-        $('#btnEnd').disabled=false;
-    }
-}
-
-/* =============================== Achat / Enchères / Construction =============================== */
-$('#btnBuy').addEventListener('click', ()=>{
-    const p = currentPlayer(), s = BOARD[p.pos];
-    if(!isProp(s)) return;
-    const price = priceOf(s);
-    const w = getWallet(p);
-    if(w.cash<price){ toast("Pas assez d'argent."); SFX.rent(); return; }
-    w.cash -= price;
-    addPropToWallet(p, s.id);
-    s.owner = p.id;
-    s.houses=0;
-    log(`✅ ${p.name} achète <b>${s.name}</b> pour <b>${moneyFmt(price)}</b>.`);
-    SFX.buy();
-    Music.purchase();
-    renderPlayers();
-    $('#btnBuy').disabled=true;
-    $('#btnAuction').disabled=true;
-    maybeCheckMission(p);
-});
-
-$('#btnAuction').addEventListener('click', ()=>{
-    Music.auction();
-    const sId = BOARD[currentPlayer().pos].id;
-    startAuction(sId);
-});
-function startAuction(sId){
-    const s = BOARD[sId];
-    log(`🔨 Enchère pour <b>${s.name}</b> !`);
-    SFX.click();
-    let bestBid=-1, winner=null;
-    State.players.forEach(pl=>{
-        if(pl.bankrupt) return;
-        const v = aiBid(pl, s);
-        if(v>bestBid){ bestBid=v; winner=pl; }
-    });
-
-    if(!winner || bestBid<=0){ log(`❌ Enchère annulée.`); Music.ambient(); return; }
-    const w = getWallet(winner);
-    if(w.cash<bestBid){ log(`❌ ${winner.name} ne peut pas payer ${moneyFmt(bestBid)}.`); Music.ambient(); return; }
-
-    w.cash -= bestBid;
-    addPropToWallet(winner, s.id);
-    s.owner=winner.id;
-    s.houses=0;
-    log(`🏆 ${winner.name} remporte <b>${s.name}</b> pour <b>${moneyFmt(bestBid)}</b>.`);
-    renderPlayers();
-    Music.ambient();
-}
-function aiBid(pl, s){
-    const base = priceOf(s);
-    let k = {Facile:0.6, Modéré:0.8, Difficile:1.0}[State.settings.aiLevel]||0.8;
-    const w = getWallet(pl);
-    if(s.group && groupTiles(s.group).some(id=> w.properties.includes(id))) k+=0.15;
-    const max = Math.max(0, w.cash-200);
-    let bid = Math.min(max, Math.round(base*k));
-    const err = (State.settings.aiLevel==='Facile'?randRange(-0.25,0.25):State.settings.aiLevel==='Modéré'?randRange(-0.12,0.12):randRange(-0.06,0.06));
-    bid = Math.max(0, Math.round(bid*(1+err)));
-    return bid;
-}
-
-function openBuildModal() {
-    const p = currentPlayer();
-    const w = getWallet(p);
-    const buildList = $('#buildList');
-    buildList.innerHTML = '';
-    const buildModal = $('#buildModal');
-
-    let candidates = BOARD.filter(s =>
-        s.type === 'prop' &&
-        w.properties.includes(s.id) &&
-        (!State.settings.monopolyReq || walletOwnsGroup(p, s.group)) &&
-        (s.houses || 0) < (State.settings.eiffelMode && s.rent.length > 6 ? 10 : 5)
-    );
-
-    if (State.settings.evenBuild) {
-        const buildableGroups = getMonopoliesWallet(w);
-        let finalCandidates = [];
-        buildableGroups.forEach(group => {
-            const groupProps = BOARD.filter(s => s.group === group && w.properties.includes(s.id));
-            if (groupProps.length === 0) return;
-
-            const houseLevels = groupProps.map(s => s.houses || 0);
-            const minHouses = Math.min(...houseLevels);
-
-            const eligibleInGroup = groupProps.filter(s => (s.houses || 0) === minHouses);
-            finalCandidates.push(...eligibleInGroup);
-        });
-        const finalIds = finalCandidates.map(s => s.id);
-        candidates = candidates.filter(c => finalIds.includes(c.id));
-    }
-
-    if (!candidates.length) {
-        toast('Aucune propriété éligible pour construire (ou construction non-équilibrée).');
-        return;
-    }
-
-    buildList.innerHTML = ''; // Clear previous items
-    candidates.forEach(s => {
-        let cost = 0;
-        let buildType = '';
-        const currentHouses = s.houses || 0;
-
-        if (currentHouses < 4) {
-            cost = HOUSECOST[s.group];
-            buildType = `Construire Maison (${currentHouses + 1})`;
-        } else if (currentHouses === 4) {
-            cost = HOTELCOST[s.group];
-            buildType = 'Construire Hôtel';
-        } else if (State.settings.eiffelMode && currentHouses >= 5 && currentHouses < 9) {
-            cost = HOTELCOST[s.group];
-            buildType = `Construire Hôtel (${currentHouses - 3})`;
-        } else if (State.settings.eiffelMode && currentHouses === 9) {
-            cost = TOWERCOST;
-            buildType = 'Construire Tour Eiffel';
-        } else {
-            return; // Maxed out
+        function updatePanel(data) {
+            titleEl.textContent = data.name;
+            descEl.textContent = data.info;
+            let badgeContent = '';
+            let badgeColor = 'bg-secondary-subtle text-secondary-emphasis';
+            let iconClass = 'fa-map-pin';
+            switch (data.type) {
+                case 'property':
+                    badgeColor = 'bg-dark text-white';
+                    iconClass = 'fa-house';
+                    badgeContent = `${data.group ? data.group.replace('-', ' ') : 'Propriété'} · ${data.price || ''}`;
+                    break;
+                case 'station':
+                    badgeColor = 'bg-primary-subtle text-primary-emphasis';
+                    iconClass = 'fa-train';
+                    badgeContent = `Gare · ${data.price || ''}`;
+                    break;
+                case 'utility':
+                    badgeColor = 'bg-info-subtle text-info-emphasis';
+                    iconClass = 'fa-plug';
+                    badgeContent = `Compagnie · ${data.price || ''}`;
+                    break;
+                case 'chance':
+                    badgeColor = 'bg-warning-subtle text-warning-emphasis';
+                    iconClass = 'fa-question';
+                    badgeContent = 'Chance';
+                    break;
+                case 'community':
+                    badgeColor = 'bg-success-subtle text-success-emphasis';
+                    iconClass = 'fa-gift';
+                    badgeContent = 'Caisse de communauté';
+                    break;
+                case 'tax':
+                    badgeColor = 'bg-danger-subtle text-danger-emphasis';
+                    iconClass = 'fa-coins';
+                    badgeContent = 'Taxe';
+                    break;
+                default:
+                    badgeColor = 'bg-warning-subtle text-warning-emphasis';
+                    iconClass = 'fa-flag-checkered';
+                    badgeContent = data.name;
+            }
+            badgeEl.className = `group-pill ${badgeColor}`;
+            badgeEl.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${badgeContent}</span>`;
         }
 
-        const canAfford = w.cash >= cost;
-
-        const item = document.createElement('div');
-        item.className = 'tradeItem';
-        item.style.padding = '8px';
-        item.innerHTML = `
-            <div style="flex-grow:1; display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                <div>
-                    <b>${s.name}</b>
-                    <div class="fine2" style="color:${COLORS[s.group]}; font-weight:bold;">${s.group}</div>
-                </div>
-                <div class="fine2">Actuel: ${currentHouses} bât.</div>
-                <button class="btn ok" data-propid="${s.id}" ${!canAfford ? 'disabled' : ''}>
-                    ${buildType} — ${moneyFmt(cost)}
-                </button>
-            </div>
-        `;
-
-        item.querySelector('button').onclick = () => {
-            if (w.cash < cost) { toast("Pas assez d'argent."); return; }
-            s.houses = (s.houses || 0) + 1;
-            w.cash -= cost;
-            log(`🏗️ ${p.name} construit: <b>${buildType.split('(')[0].trim()}</b> sur <b>${s.name}</b> pour <b>${moneyFmt(cost)}</b>.`);
-            SFX.build(); Music.build();
-            animateBuildOnTile(s.id);
-            renderPlayers(); drawBoard();
-            maybeCheckMission(p);
-            buildModal.style.display = 'none';
-        };
-        buildList.appendChild(item);
-    });
-
-    buildModal.style.display = 'flex';
-}
-$('#btnBuild').addEventListener('click', ()=>{ openBuildModal(); });
-$('#buildCancel').addEventListener('click', () => { $('#buildModal').style.display = 'none'; SFX.click(); });
-
-
-/* =============================== Boutons UI =============================== */
-$('#btnTrade').addEventListener('click', ()=>{ SFX.click(); openTradeModal(); });
-$('#btnEnd').addEventListener('click', ()=>{ SFX.click(); $('#btnEnd').disabled=true; nextPlayer(); const p = currentPlayer(); if(p.isAI && !State.gameOver) setTimeout(aiTurn, 500); });
-$('#btnRoll').addEventListener('click', ()=>{ SFX.click(); rollDice(); });
-$('#btnBars').addEventListener('click', ()=>{ const m=$('#menuBars'); m.style.display= m.style.display==='block'?'none':'block'; SFX.click(); });
-$('#btnPause').addEventListener('click', ()=>{ State.paused=true; $('#btnPause').disabled=true; $('#btnResume').disabled=false; toast('Pause'); });
-$('#btnResume').addEventListener('click', ()=>{ State.paused=false; $('#btnPause').disabled=false; $('#btnResume').disabled=true; toast('Reprise'); });
-$('#btnQuit').addEventListener('click', ()=>{ if(confirm('Abandonner la partie en cours ?')) location.reload(); });
-$('#btnSave').addEventListener('click', ()=>{ localStorage.setItem('monopolyFRsaveDX', JSON.stringify(State)); toast('Sauvegardé.'); });
-$('#btnLoad').addEventListener('click', ()=>{ const s=localStorage.getItem('monopolyFRsaveDX'); if(!s){toast('Aucune sauvegarde.');return;} Object.assign(State, JSON.parse(s)); $('#startModal').style.display='none'; renderPlayers(); drawBoard(); State.started=true; toast('Chargé.'); });
-$('#volMusic').addEventListener('input', (e)=>{ Music.setVol(e.target.value/100); });
-
-/* =============================== Cartes (Chance/Caisse + Carte Propriété) =============================== */
-function drawCard(type, p){
-    const deck = (type==='chance')?State.deck.chance:State.deck.community;
-    if(deck.length===0){ deck.push(...(type==='chance'?CHANCE:COMMUNITY)); shuffle(deck); }
-    const card = deck.shift();
-
-    $('#flipFrontTitle').textContent = 'Carte tirée';
-    $('#flipFrontText').textContent = 'Retourne la carte…';
-    $('#cardTitle').textContent = type==='chance'?'Chance':'Caisse de communauté';
-    $('#cardText').textContent = card.text;
-    $('#cardBack').style.background = (type==='chance')?'var(--chance)':'var(--comm)';
-    $('#cardEffect').textContent = '';
-    $('#cardOverlay').style.display='flex';
-    $('#flip').classList.remove('show');
-
-    setTimeout(()=>{ $('#flip').classList.add('show'); SFX.card(); }, 50);
-
-    $('#btnCardOk').onclick = ()=>{
-        $('#cardOverlay').style.display='none';
-        setTimeout(()=>card.effect(p), 10);
-    };
-}
-function showPropertyCard(tile, ownerPlayer){
-    const flip = $('#flip');
-    const frontTitle=$('#flipFrontTitle');
-    const frontText=$('#flipFrontText');
-    const back=$('#cardBack'), title=$('#cardTitle'), text=$('#cardText');
-
-    flip.classList.add('wide');
-    frontTitle.textContent = 'Carte Propriété';
-    frontText.textContent = tile.name;
-    back.style.background = tile.group?COLORS[tile.group]:'#fff';
-    title.textContent = tile.name;
-    let info = `Type : ${tile.type==='prop'?'Propriété':tile.type==='station'?'Gare':'Compagnie'}\n`;
-    if(tile.type==='prop'){
-        info += `Groupe : ${tile.group}\nLoyer nus : ${moneyFmt(tile.rent[0])}\n`;
-        info += `Niveau de construction : ${(tile.houses||0)}\n`;
-        if(tile.group) info += `Coût par maison : ${moneyFmt(HOUSECOST[tile.group])}\n`;
-        if(tile.group) info += `Coût par hôtel : ${moneyFmt(HOTELCOST[tile.group])}\n`;
-        if(State.settings.eiffelMode && tile.rent.length > 6) {
-             info += `Coût Tour Eiffel : ${moneyFmt(TOWERCOST)}\n`;
+        function pushLog(message) {
+            const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            const entry = document.createElement('div');
+            entry.className = 'mb-2 small';
+            entry.innerHTML = `<span class="text-muted me-2">${time}</span>${message}`;
+            logEl.prepend(entry);
+            const items = logEl.querySelectorAll('.mb-2');
+            if (items.length > 12) {
+                logEl.removeChild(logEl.lastChild);
+            }
         }
-    } else if(tile.type==='station'){
-        info += `Prix : ${moneyFmt(priceOf(tile))}\nLoyers : 25/50/100/200`;
-    } else if(tile.type==='utility'){
-        info += `Prix : ${moneyFmt(priceOf(tile))}\nLoyer : 4x ou 10x la somme des dés`;
-    }
-    text.textContent = info;
-    $('#btnCardOk').onclick = ()=>{ $('#cardOverlay').style.display='none'; flip.classList.remove('wide'); };
-    $('#cardOverlay').style.display='flex';
-    $('#flip').classList.remove('show');
-    setTimeout(()=>$('#flip').classList.add('show'), 50);
-}
 
-/* =============================== IA (tour + négociation proactive + mémoire) =============================== */
-function aiTurn(){
-    const p = currentPlayer();
-    if(!p || !p.isAI || State.paused || State.gameOver) return;
-
-    if(p.jail>0){
-        if(p.gojf>0){ p.gojf--; p.jail=0; log(`🃏 ${p.name} utilise sa carte Sortie de prison.`);}
-    }
-
-    if(State.canRoll){ rollDice('force'); return; }
-
-    const s = BOARD[p.pos];
-    if(isProp(s) && !ownerOf(s.id)){
-        const price = priceOf(s), worth = aiWorth(p, s);
-        const err = (State.settings.aiLevel==='Facile'?randRange(-0.25,0.25):State.settings.aiLevel==='Modéré'?randRange(-0.12,0.12):randRange(-0.06,0.06));
-        if(getWallet(p).cash - price >= 100 && price<=worth*(1+err)){
-            $('#btnBuy').click();
-        } else {
-            if(Math.random()<0.45) $('#btnAuction').click();
+        function rollDice() {
+            const d1 = Math.floor(Math.random() * 6) + 1;
+            const d2 = Math.floor(Math.random() * 6) + 1;
+            updateDiceDisplay(d1, d2);
+            const total = d1 + d2;
+            const nextIndex = (activeIndex + total) % squares.length;
+            setActive(nextIndex);
+            pushLog(`Lancer de dés : <strong>${d1}</strong> + <strong>${d2}</strong> = <strong>${total}</strong>.`);
         }
-    } else if(Math.random()<0.4){
-        $('#btnBuild').click();
-    }
-    setTimeout(()=>$('#btnEnd').click(), 400);
-}
-function aiWorth(p, s){
-    const w = getWallet(p);
-    if(s.type==='station') return priceOf(s)*0.8 + 40*countStationsWallet(w);
-    if(s.type==='utility') return 200;
-    if(s.type==='prop'){
-        const base=s.rent[0]*30;
-        const gOwned=groupTiles(s.group).filter(id=> w.properties.includes(id)).length;
-        return base*([1,1.15,1.35,1.5][gOwned]||1);
-    }
-    return 0;
-}
-function aiMaybeProposeTrade(ai){
-    if(State.gameOver || State.paused) return;
-    const others = State.players.filter(q=>q.id!==ai.id && !q.bankrupt);
-    if(!others.length) return;
 
-    const to = others[randInt(0,others.length-1)];
-    const wA = getWallet(ai), wB = getWallet(to);
-    if(!wA.properties.length || !wB.properties.length) return;
-
-    const giveId = wA.properties[randInt(0,wA.properties.length-1)];
-    const takeCandidates = wB.properties.slice().sort((a,b)=>
-        Math.abs(priceOf(BOARD[a])-priceOf(BOARD[giveId])) - Math.abs(priceOf(BOARD[b])-priceOf(BOARD[giveId]))
-    );
-    if (!takeCandidates.length) return;
-    const takeId = takeCandidates[0];
-    const cashFrom = 0, cashTo = 0;
-
-    const accept = aiEvaluateTrade(to, BOARD[takeId], BOARD[giveId], cashTo - cashFrom, ai.id);
-    log(`💬 ${ai.name} propose un échange à ${to.name} : <b>${BOARD[giveId].name}</b> ↔ <b>${BOARD[takeId].name}</b>.`);
-
-    if(to.isAI){
-        if(accept) { applyTrade(ai,to,giveId,takeId,cashFrom,cashTo); log(`✅ ${to.name} (IA) accepte.`); }
-        else log(`❌ ${to.name} (IA) refuse.`);
-    } else {
-        openTradeModalReadOnly(ai,to,giveId,takeId,cashFrom,cashTo);
-    }
-}
-function aiEvaluateTrade(aiReceiver, getTile, giveTile, cashNetToAI, proposerId=null){
-    const level = State.settings.aiLevel;
-    const val = (t,who)=>{
-        let v = priceOf(t);
-        const ownedGroup = t.group?groupTiles(t.group).filter(id=> getWallet(who).properties.includes(id)).length:0;
-        v *= (1 + ownedGroup*0.12);
-        return v;
-    };
-    const benefit = val(getTile, aiReceiver) - val(giveTile, aiReceiver) + cashNetToAI;
-    let trust = 0;
-    if(proposerId!=null){
-        State.aiMemory[aiReceiver.id] ||= {};
-        trust = State.aiMemory[aiReceiver.id][proposerId] || 0;
-    }
-    const baseAccept = level==='Facile' ? (benefit + trust > -80) : level==='Modéré' ? (benefit + trust > -10) : (benefit + trust > 0);
-    return baseAccept;
-}
-function updateTrust(acceptingAI, proposerId, delta){
-    if(acceptingAI.isAI){
-        State.aiMemory[acceptingAI.id] ||= {};
-        State.aiMemory[acceptingAI.id][proposerId] = (State.aiMemory[acceptingAI.id][proposerId]||0) + Math.max(-100, Math.min(100, delta/10));
-    }
-}
-
-/* =============================== TRADE — Modale complète =============================== */
-const tradeModal = $('#tradeModal');
-const tradeOpponentSel = $('#tradeOpponent');
-const tradeFromList = $('#tradeFromList');
-const tradeToList = $('#tradeToList');
-const tradeCashFrom = $('#tradeCashFrom');
-const tradeCashTo = $('#tradeCashTo');
-const tradeSend = $('#tradeSend');
-const tradeCancel = $('#tradeCancel');
-const tradeSuggestAi= $('#tradeSuggestAi');
-const tradeAcceptPanel = $('#tradeAcceptPanel');
-const tradeAcceptBtn = $('#tradeAcceptBtn');
-const tradeRejectBtn = $('#tradeRejectBtn');
-const tradePendingText = $('#tradePendingText');
-let tradeContext = null;
-
-function openTradeModal(){
-    const p = currentPlayer();
-    tradeOpponentSel.innerHTML = '';
-    State.players.forEach(q=>{
-        if(q.id!==p.id && !q.bankrupt){
-            const opt = document.createElement('option');
-            opt.value = q.id;
-            opt.textContent = q.name + (q.isAI?' (IA)':'');
-            tradeOpponentSel.appendChild(opt);
+        function updateDiceDisplay(d1, d2) {
+            diceOne.className = `fa-solid ${diceClasses[d1]}`;
+            diceTwo.className = `fa-solid ${diceClasses[d2]}`;
         }
-    });
-    $('#tradeFromTitle').textContent = `${p.name} — tes propriétés`;
-    $('#tradeToTitle').textContent = `Propriétés adverses`;
-    tradeCashFrom.value = 0;
-    tradeCashTo.value = 0;
-    tradeAcceptPanel.style.display='none';
-    renderTradeLists(p.id, parseInt(tradeOpponentSel.value||-1));
-    tradeOpponentSel.onchange = ()=> renderTradeLists(p.id, parseInt(tradeOpponentSel.value||-1));
-    tradeSend.onclick = sendTradeProposal;
-    tradeCancel.onclick = ()=>{ tradeModal.style.display='none'; };
-    tradeSuggestAi.onclick = ()=> autoSuggestTrade();
-    tradeModal.style.display='flex';
-}
-function openTradeModalReadOnly(from,to,giveId,takeId,cashFrom,cashTo){
-    tradeOpponentSel.innerHTML = `<option value="${to.id}">${to.name}</option>`;
-    renderTradeLists(from.id, to.id);
-    tradeFromList.querySelectorAll('input[name="fromOne"]').forEach(r=> r.disabled=true);
-    tradeToList .querySelectorAll('input[name="toOne"]').forEach(r=> r.disabled=true);
-    tradeFromList.querySelector(`input[value="${giveId}"]`)?.setAttribute('checked','checked');
-    tradeToList .querySelector(`input[value="${takeId}"]`)?.setAttribute('checked','checked');
-    tradeCashFrom.value=cashFrom; tradeCashFrom.disabled=true;
-    tradeCashTo.value=cashTo; tradeCashTo.disabled=true;
-    tradePendingText.textContent = `Proposition de ${from.name}`;
-    tradeAcceptPanel.style.display='block';
-    tradeAcceptBtn.style.display='inline-block';
-    tradeRejectBtn.style.display='inline-block';
-    tradeSend.onclick = ()=>{}; // bloqué
-    tradeCancel.onclick = ()=>{ tradeModal.style.display='none'; };
-    tradeContext = {fromId:from.id,toId:to.id,giveId,takeId,cashFrom,cashTo,awaiting:true, readOnly:true};
-    tradeAcceptBtn.onclick = ()=> acceptTrade();
-    tradeRejectBtn.onclick = ()=> rejectTrade();
-    tradeModal.style.display='flex';
-}
-function renderTradeLists(fromId, toId){
-    tradeFromList.innerHTML=''; tradeToList.innerHTML='';
-    if(toId<0) return;
-    const fromP = State.players.find(z=>z.id===fromId);
-    const toP = State.players.find(z=>z.id===toId);
-    const mkItem = (tile, side) => {
-        const wrap = document.createElement('label');
-        wrap.className='tradeItem';
-        const color = tile.group?COLORS[tile.group]:'#ddd';
-        wrap.innerHTML = `<input type="radio" name="${side}" value="${tile.id}"/>
-            <span class="swatch" style="background:${color}"></span>
-            <div>
-                <div><b>${tile.name}</b></div>
-                <div class="fine2">${tile.type==='prop'?'Propriété':tile.type==='station'?'Gare':'Compagnie'} — Prix : ${moneyFmt(priceOf(tile))}</div>
-            </div>
-        `;
-        return wrap;
-    };
-    getWallet(fromP).properties.forEach(id=>{ const t=BOARD[id]; if(isProp(t)) tradeFromList.appendChild(mkItem(t,'fromOne')); });
-    getWallet(toP) .properties.forEach(id=>{ const t=BOARD[id]; if(isProp(t)) tradeToList.appendChild(mkItem(t,'toOne')); });
-}
-function selectionValue(name){
-    const el = document.querySelector(`input[name="${name}"]:checked`);
-    return el?parseInt(el.value):null;
-}
-function sendTradeProposal(){
-    const from = currentPlayer();
-    const toId = parseInt(tradeOpponentSel.value);
-    if(Number.isNaN(toId)){ toast('Choisis un adversaire.'); return; }
-    const to = State.players.find(p=>p.id===toId);
-    const giveId = selectionValue('fromOne');
-    const takeId = selectionValue('toOne');
-    if(giveId==null || takeId==null){ toast('Sélectionne une propriété de chaque côté.'); return; }
-    const cashFrom = parseInt(tradeCashFrom.value||'0');
-    const cashTo = parseInt(tradeCashTo.value||'0');
-    if(cashFrom<0 || cashTo<0){ toast('Montants de cash invalides.'); return; }
 
-    tradeContext = {fromId:from.id,toId:to.id,giveId,takeId,cashFrom,cashTo,awaiting:true};
-    log(`🧾 Proposition d'échange : <b>${from.name}</b> propose <b>${BOARD[giveId].name}</b> ↔ <b>${BOARD[takeId].name}</b>.`);
-
-    if(to.isAI){
-        const accept = aiEvaluateTrade(to, BOARD[takeId], BOARD[giveId], cashTo - cashFrom, from.id);
-        setTimeout(()=>{ if(accept) acceptTrade(); else rejectTrade(); }, 450);
-        tradePendingText.textContent = `L'IA ${to.name} réfléchit…`;
-        tradeAcceptPanel.style.display='block';
-        tradeAcceptBtn.style.display='none'; tradeRejectBtn.style.display='none';
-    } else {
-        tradePendingText.textContent = `${to.name} doit accepter ou refuser.`;
-        tradeAcceptPanel.style.display='block';
-        tradeAcceptBtn.style.display='inline-block';
-        tradeRejectBtn.style.display='inline-block';
-        // BUG CORRIGÉ : Les fonctions n'étaient pas assignées aux boutons pour un joueur humain.
-        tradeAcceptBtn.onclick = () => acceptTrade();
-        tradeRejectBtn.onclick = () => rejectTrade();
-    }
-}
-function acceptTrade(){
-    if(!tradeContext){ return; }
-    const {fromId,toId,giveId,takeId,cashFrom,cashTo} = tradeContext;
-    const A = State.players.find(p=>p.id===fromId);
-    const B = State.players.find(p=>p.id===toId);
-    const wA = getWallet(A), wB = getWallet(B);
-
-    if(!wA.properties.includes(giveId) || !wB.properties.includes(takeId)){ toast('Échange impossible (propriété non disponible).'); tradeContext=null; tradeModal.style.display='none'; return; }
-    if(wA.cash<cashFrom){ toast(`${A.name} n'a pas ${moneyFmt(cashFrom)}.`); return; }
-    if(wB.cash<cashTo){ toast(`${B.name} n'a pas ${moneyFmt(cashTo)}.`); return; }
-
-    // exécution
-    applyTrade(A, B, giveId, takeId, cashFrom, cashTo);
-
-    log(`🤝 Échange validé : ${A.name} ↔ ${B.name}.`);
-    const deltaB = (priceOf(BOARD[giveId]) - priceOf(BOARD[takeId])) + (cashFrom - cashTo);
-    updateTrust(B, A.id, deltaB);
-
-    tradeContext=null;
-    tradeModal.style.display='none';
-    SFX.click();
-}
-function rejectTrade(){
-    if(!tradeContext) return;
-    const {fromId,toId} = tradeContext;
-    const A = State.players.find(p=>p.id===fromId);
-    const B = State.players.find(p=>p.id===toId);
-    log(`❌ ${B?.name??'Le joueur'} refuse l'échange.`);
-    if(B) updateTrust(B, A.id, -30);
-    tradeContext=null;
-    tradeModal.style.display='none';
-    SFX.click();
-}
-function autoSuggestTrade(){
-    const from = currentPlayer();
-    const to = State.players.find(p=>p.id===parseInt(tradeOpponentSel.value));
-    if(!from || !to){ toast('Choisis un adversaire.'); return; }
-    const pProps = getWallet(from).properties;
-    const qProps = getWallet(to).properties;
-    if(!pProps.length || !qProps.length){ toast("Pas assez de propriétés pour suggérer."); return; }
-
-    const giveId = pProps[randInt(0,pProps.length-1)];
-    const takeCandidates = qProps.slice().sort((a,b)=>
-        Math.abs(priceOf(BOARD[a])-priceOf(BOARD[giveId])) - Math.abs(priceOf(BOARD[b])-priceOf(BOARD[giveId]))
-    );
-    const takeId = takeCandidates[0];
-    tradeFromList.querySelectorAll('input[name="fromOne"]').forEach(r=>{ r.checked = (parseInt(r.value)===giveId); });
-    tradeToList.querySelectorAll('input[name="toOne"]').forEach(r=>{ r.checked = (parseInt(r.value)===takeId); });
-    tradeCashFrom.value = 0; tradeCashTo.value = 0;
-    toast('Proposition pré-remplie.');
-}
-function applyTrade(A,B,giveId,takeId,cashFrom,cashTo){
-    const wA = getWallet(A), wB = getWallet(B);
-    if(!wA.properties.includes(giveId) || !wB.properties.includes(takeId)) return;
-    if(wA.cash<cashFrom || wB.cash<cashTo) return;
-
-    removePropFromWallet(A, giveId); addPropToWallet(B, giveId); BOARD[giveId].owner=B.id;
-    removePropFromWallet(B, takeId); addPropToWallet(A, takeId); BOARD[takeId].owner=A.id;
-
-    // BUG CORRIGÉ : Erreur de copier-coller dans le transfert d'argent. wB recevait cashTo au lieu de cashFrom.
-    if(cashFrom>0){ wA.cash -= cashFrom; wB.cash += cashFrom; }
-    if(cashTo>0){ wB.cash -= cashTo; wA.cash += cashTo; }
-
-    renderPlayers();
-    drawBoard();
-}
-
-/* =============================== Faillite & fin =============================== */
-function openDebtModal(p) {
-    const debtModal = $('#debtModal');
-    $('#btnBankrupt').onclick = () => {
-        debtModal.style.display = 'none';
-        handleRealBankruptcy(p);
-    };
-    refreshDebtModal(p);
-    debtModal.style.display = 'flex';
-}
-
-function refreshDebtModal(p) {
-    const w = getWallet(p);
-    const debt = -w.cash;
-    $('#debtAmount').textContent = moneyFmt(debt);
-
-    if (w.cash >= 0) {
-        $('#debtModal').style.display = 'none';
-        toast('Dette remboursée !');
-        renderPlayers();
-        drawBoard(); // Redraw to remove houses/etc
-        return;
-    }
-
-    const sellList = $('#sellList');
-    const mortgageList = $('#mortgageList');
-    sellList.innerHTML = '';
-    mortgageList.innerHTML = '';
-
-    let totalRaisable = 0;
-
-    // Populate sell list
-    const sellableProps = w.properties.map(id => BOARD[id]).filter(s => s.type === 'prop' && s.houses > 0).sort((a,b) => b.houses - a.houses);
-
-    sellableProps.forEach(s => {
-        const currentHouses = s.houses;
-        let sellPrice = 0;
-        let buildingType = '';
-
-        if (State.settings.eiffelMode && currentHouses === 10) { sellPrice = TOWERCOST / 2; buildingType = "Tour Eiffel"; }
-        else if (currentHouses >= 5) { sellPrice = HOTELCOST[s.group] / 2; buildingType = "Hôtel"; }
-        else { sellPrice = HOUSECOST[s.group] / 2; buildingType = "Maison"; }
-
-        sellPrice *= State.sellModifier;
-        sellPrice = Math.round(sellPrice);
-        totalRaisable += sellPrice;
-
-        const item = document.createElement('div');
-        item.className = 'tradeItem';
-        item.innerHTML = `<div style="flex-grow:1;"><b>${s.name}</b> (${currentHouses} bât.)</div> <button class="btn warn" style="padding: 6px 10px;">Vendre ${buildingType} (+${moneyFmt(sellPrice)})</button>`;
-        item.querySelector('button').onclick = () => {
-            s.houses--;
-            w.cash += sellPrice;
-            log(`💰 ${p.name} vend un(e) ${buildingType} sur ${s.name} pour ${moneyFmt(sellPrice)}.`);
-            SFX.buy();
-            refreshDebtModal(p);
-        };
-        sellList.appendChild(item);
-    });
-
-    // Populate mortgage list
-    w.properties.forEach(id => {
-        const s = BOARD[id];
-        if (!(w.mortgaged?.includes(id)) && isProp(s)) {
-            const mortgageValue = Math.round(priceOf(s) / 2);
-            totalRaisable += mortgageValue;
-            const item = document.createElement('div');
-            item.className = 'tradeItem';
-            item.innerHTML = `<div style="flex-grow:1;"><b>${s.name}</b></div> <button class="btn warn" style="padding: 6px 10px;">Hypothéquer (+${moneyFmt(mortgageValue)})</button>`;
-            item.querySelector('button').onclick = () => {
-                if(!w.mortgaged) w.mortgaged = [];
-                w.mortgaged.push(id);
-                w.cash += mortgageValue;
-                log(`💰 ${p.name} hypothèque ${s.name} pour ${moneyFmt(mortgageValue)}.`);
-                SFX.buy();
-                refreshDebtModal(p);
-            };
-            mortgageList.appendChild(item);
+        function resetBoard() {
+            setActive(0);
+            updateDiceDisplay(1, 1);
+            pushLog('Réinitialisation du pion au départ.');
         }
-    });
 
-    // Can the player even possibly recover?
-    if (w.cash + totalRaisable < 0) {
-        $('#btnBankrupt').disabled = false; // They have to go bankrupt
-        $('#btnBankrupt').textContent = "Faillite inévitable";
-    } else {
-        $('#btnBankrupt').disabled = false; // Can always choose to give up
-        $('#btnBankrupt').textContent = "Déclarer faillite";
-    }
-}
+        rollBtn.addEventListener('click', rollDice);
+        resetBtn.addEventListener('click', resetBoard);
 
-function handleRealBankruptcy(p) {
-    const w = getWallet(p);
-    p.bankrupt = true;
-    confetti();
-    SFX.bankrupt();
-    log(`💥 <b>${p.name}</b> fait faillite !`);
-
-    w.properties.forEach(id => {
-        const tile = BOARD[id];
-        delete tile.owner;
-        tile.houses = 0;
-    });
-    w.properties = [];
-    if(w.mortgaged) w.mortgaged = [];
-    w.cash = 0;
-    renderPlayers();
-    drawBoard();
-
-    const alive = State.players.filter(q => !q.bankrupt);
-    if (alive.length <= 1) {
-        State.gameOver = true;
-        log(`🏆 <b>${alive[0]?.name ?? 'Personne'}</b> gagne la partie !`);
-        SFX.win();
-        Music.win();
-    }
-}
-
-function checkBankrupt(p) {
-    const w = getWallet(p);
-    if (w.cash < 0) {
-        openDebtModal(p);
-    }
-}
-function confetti(){
-    const c = $('#confetti'); c.innerHTML='';
-    for(let i=0;i<120;i++){
-        const e=document.createElement('i');
-        e.style.left=(Math.random()*100)+'%';
-        e.style.top='-10%';
-        e.style.color=['#ef4444','#22c55e','#3b82f6','#eab308','#a855f7','#14b8a6'][randInt(0,5)];
-        e.style.animationDelay=(Math.random()*0.6)+'s';
-        e.style.transform=`translateY(0) rotate(${Math.random()*360}deg)`;
-        c.appendChild(e);
-    }
-    setTimeout(()=>c.innerHTML='', 2200);
-}
-
-/* =============================== Missions =============================== */
-function maybeCheckMission(p){
-    const m = State.settings.mission;
-    if(m==='none' || State.gameOver) return;
-    const w = getWallet(p);
-
-    if(m==='hotel_red'){
-        const redTiles = BOARD.filter(t=>t.group==='RED' && t.houses===5 && w.properties.includes(t.id));
-        if(redTiles.length){
-            winByMission(`${p.name} réalise la <b>mission</b> : 1er Hôtel rouge (${redTiles[0].name})`);
-        }
-    }
-    if(m==='all_stations'){
-        const allStations = BOARD.filter(t=>t.type==='station').every(t=> w.properties.includes(t.id));
-        if(allStations){ winByMission(`${p.name} possède <b>toutes les gares</b>`); }
-    }
-    if(m==='cash_4000'){
-        if(w.cash>=4000){ winByMission(`${p.name} atteint <b>4000€</b>`); }
-    }
-    if (m === 'combo_master') {
-        const stations = w.properties.filter(id => BOARD[id].type === 'station').length;
-        const utils = w.properties.filter(id => BOARD[id].type === 'utility').length;
-        const hotels = w.properties.some(id => (BOARD[id].houses || 0) >= 5);
-        if (stations >= 2 && utils >= 1 && hotels) {
-            winByMission(`${p.name} réalise la mission <b>Combo Master</b> (2 gares, 1 utilité, 1 hôtel)`);
-        }
-    }
-}
-function winByMission(txt){
-    if(State.gameOver) return;
-    State.gameOver=true;
-    log(`🎯 Victoire Mission ! ${txt}.`);
-    SFX.win();
-    Music.win();
-}
-
-/* =============================== Helpers diverses =============================== */
-function nearestUtility(p){
-    const utilities = BOARD.filter(s=>s.type==='utility').map(s=>s.id);
-    const ahead = utilities.map(u=> (u - p.pos + 40)%40 ).sort((a,b)=>a-b)[0];
-    const target = (p.pos + ahead)%40;
-    moveTo(p, target, true);
-}
-function nearestStation(p){
-    const stations = BOARD.filter(s=>s.type==='station').map(s=>s.id);
-    const ahead = stations.map(u=> (u - p.pos + 40)%40 ).sort((a,b)=>a-b)[0];
-    const target = (p.pos + ahead)%40;
-    moveTo(p, target, true);
-
-    const own = ownerOf(target);
-    if(own && own.id!==p.id){
-        const baseRent = rentAmount(BOARD[target], own);
-        const rent = baseRent*2;
-        money(p,-rent); money(own,rent);
-        log(`🚆 Loyer double à la gare : ${moneyFmt(rent)} à ${own.name}.`);
-    }
-}
-function communityOrChance(p) {
-    log("Fonctionnalité 'Amende ou Chance' à implémenter.");
-    money(p, -10); // Paie l'amende par défaut
-}
-
-/* =============================== Contrôles init =============================== */
-document.addEventListener('click',()=>{ try{ if(AudioCtx && AudioCtx.state==='suspended') AudioCtx.resume(); }catch{} }, {once:true});
-$('#btnStart').addEventListener('click', ()=>{
-    const n = parseInt($('#numPlayers').value||'2');
-    const chosen = new Set();
-    for(let i=0;i<n;i++){
-        const t = $('#ptoken_'+i).value;
-        if(chosen.has(t)){ alert('Chaque pion doit être unique.'); return; }
-        chosen.add(t);
-    }
-    startGame();
-    SFX.click();
-    if(currentPlayer().isAI) setTimeout(aiTurn, 400);
-});
-$('#playersCfg').addEventListener('click', (e)=>{
-    if(e.target.classList.contains('segbtn')){
-        const parent = e.target.parentElement;
-        parent.querySelectorAll('.segbtn').forEach(b=>b.classList.remove('active'));
-        e.target.classList.add('active');
-        SFX.click();
-    }
-});
-
-/* =============================== Dessin initial =============================== */
-drawBoard();
-</script>
-
+        renderSquares();
+        setActive(0);
+        pushLog('Bienvenue sur le plateau Monopoly Deluxe !');
+    </script>
 </body>
 </html>
