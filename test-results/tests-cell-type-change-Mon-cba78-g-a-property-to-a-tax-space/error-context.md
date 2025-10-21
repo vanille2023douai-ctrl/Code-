@@ -1,0 +1,56 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - text: "const showPropertyEditor = (cellId) => { if (!isEditorMode || [0, 10, 20, 30].includes(cellId)) return; let tempProp = JSON.parse(JSON.stringify(PROPERTIES[cellId])); const generateEditorHTML = (prop) => { const isEiffelTowerMode = document.getElementById('eiffel-tower-mode').checked; const cellTypes = ['PROPERTY', 'RAILROAD', 'UTILITY', 'TAX', 'CHANCE', 'COMMUNITY_CHEST']; const typeOptions = cellTypes.map(type => `"
+  - 'option "${type}" [ref=e2]'
+  - text: "`).join(''); let fieldsHTML = ''; switch (prop.type) { case 'PROPERTY': const rentLevels = isEiffelTowerMode ? 11 : 6; const rentLabels = isEiffelTowerMode ? ['Base', '1M', '2M', '3M', '4M', 'HÃ´tel', 'H+1', 'H+2', 'H+3', 'H+4', 'Tour'] : ['Base', '1 Maison', '2 Maisons', '3 Maisons', '4 Maisons', 'HÃ´tel']; fieldsHTML += `"
+  - generic [ref=e3]:
+    - text: Prix d'achat
+    - spinbutton "Prix d'achat Prix d'achat Prix d'achat" [ref=e4]
+  - generic [ref=e5]:
+    - text: Groupe de couleur
+    - textbox "Groupe de couleur" [ref=e6]: "${prop.group || 'BROWN'}"
+  - generic [ref=e7]:
+    - text: CoÃ»t Maison
+    - spinbutton "CoÃ»t Maison" [ref=e8]
+  - heading "Loyers" [level=4] [ref=e9]
+  - generic [ref=e10]:
+    - text: "${rentLabels.map((label, i) => `"
+    - generic [ref=e11]:
+      - text: "${label}"
+      - 'spinbutton "${label} ${i+1}" [ref=e12]'
+    - text: "`).join('')}"
+  - text: "`; break; case 'RAILROAD': fieldsHTML += `"
+  - generic [ref=e13]:
+    - text: Prix d'achat
+    - spinbutton [ref=e14]
+  - heading "Loyers (1-4 gares)" [level=4] [ref=e15]
+  - generic [ref=e16]:
+    - text: "${[0,1,2,3].map(i => `"
+    - generic [ref=e17]:
+      - text: "${i+1}"
+      - spinbutton [ref=e18]
+    - text: "`).join('')}"
+  - text: "`; break; case 'UTILITY': fieldsHTML += `"
+  - generic [ref=e19]:
+    - text: Prix d'achat
+    - spinbutton [ref=e20]
+  - text: "`; break; case 'TAX': fieldsHTML += `"
+  - generic [ref=e21]:
+    - text: Amende
+    - spinbutton "Amende" [ref=e22]
+  - text: "`; break; case 'CHANCE': case 'COMMUNITY_CHEST': fieldsHTML = '"
+  - paragraph [ref=e23]: Aucun paramÃ¨tre pour ce type de case.
+  - text: "'; break; } return `"
+  - generic [ref=e24]:
+    - generic [ref=e25]:
+      - text: Nom de la Case
+      - textbox "Nom de la Case" [ref=e26]: "${prop.name}"
+    - generic [ref=e27]:
+      - text: Type de Case
+      - combobox "Type de Case" [ref=e28]: "${typeOptions}"
+    - generic [ref=e29]: "${fieldsHTML}"
+  - text: "`; }; Swal.fire({ title: `Ã‰diter: ${tempProp.name}`, html: generateEditorHTML(tempProp), background: '#14532d', confirmButtonText: 'Sauvegarder', width: '600px', didOpen: () => { document.getElementById('swal-prop-type').addEventListener('change', (e) => { const newType = e.target.value; // Preserve the name, but reset other properties const currentName = document.getElementById('swal-prop-name').value; tempProp = { id: tempProp.id, name: currentName, type: newType }; // Regenerate the fields for the new type document.getElementById('swal-dynamic-fields').innerHTML = generateEditorHTML(tempProp).match(/"
+  - generic [ref=e30]: "([\\s\\S]*)<\\/div>/)[1]; }); }, preConfirm: () => { const newProp = { id: cellId }; newProp.name = document.getElementById('swal-prop-name').value; newProp.type = document.getElementById('swal-prop-type').value; switch(newProp.type) { case 'PROPERTY': newProp.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0; newProp.group = document.getElementById('swal-prop-group').value || 'BROWN'; newProp.houseCost = parseInt(document.getElementById('swal-prop-housecost').value, 10) || 0; newProp.rent = []; const rentLevels = document.getElementById('eiffel-tower-mode').checked ? 11 : 6; for (let i = 0; i < rentLevels; i++) { newProp.rent.push(parseInt(document.getElementById(`swal-prop-rent-${i}`).value, 10) || 0); } newProp.owner = null; newProp.houses = 0; newProp.mortgaged = false; break; case 'RAILROAD': newProp.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0; newProp.rent = []; for (let i = 0; i < 4; i++) { newProp.rent.push(parseInt(document.getElementById(`swal-prop-rent-${i}`).value, 10) || 0); } newProp.group = 'RAILROAD'; newProp.owner = null; newProp.mortgaged = false; break; case 'UTILITY': newProp.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0; newProp.group = 'UTILITY'; newProp.owner = null; newProp.mortgaged = false; break; case 'TAX': newProp.fine = parseInt(document.getElementById('swal-prop-fine').value, 10) || 0; break; } PROPERTIES[cellId] = newProp; appendLog(`La case ${cellId} (${newProp.name}) a Ã©tÃ© mise Ã jour en type ${newProp.type}.`, 'system'); buildBoard(); calculateCellPositions(); renderTokens(); setupBoardEditor(); } }); };"
+```

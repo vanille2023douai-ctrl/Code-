@@ -609,6 +609,10 @@
                     <input type="checkbox" id="custom-cards-mode" class="h-5 w-5 rounded text-yellow-500">
                     <span>Utiliser Cartes Perso.</span>
                 </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="eiffel-tower-mode" class="h-5 w-5 rounded text-yellow-500">
+                    <span>Mode Tour Eiffel</span>
+                </label>
             </div>
             <button id="manage-custom-button" class="w-full mt-4 py-2 bg-indigo-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-indigo-500 transition">
                 Gérer les Personnalisations
@@ -2983,41 +2987,62 @@ const showPropertyEditor = (cellId) => {
     const prop = PROPERTIES[cellId];
     if (!prop) return;
 
+    // Détermine si le mode Tour Eiffel est activé
+    const eiffelModeEnabled = document.getElementById('eiffel-tower-mode') && document.getElementById('eiffel-tower-mode').checked;
+
+    let rentInputsHTML = '';
+    if (prop.rent) {
+        const rentLevels = eiffelModeEnabled ? 11 : 6;
+        const labels = eiffelModeEnabled
+            ? ['Loyer de base', '1 Maison', '2 Maisons', '3 Maisons', '4 Maisons', '1 Hôtel', '2 Hôtels (Sup)', '3 Hôtels (Sup)', '4 Hôtels (Sup)', '5 Hôtels (Sup)', 'Tour Eiffel']
+            : ['Loyer de base', '1 Maison', '2 Maisons', '3 Maisons', '4 Maisons', 'Hôtel'];
+
+        rentInputsHTML = '<div class="grid grid-cols-2 gap-2 mt-4">';
+        for (let i = 0; i < rentLevels; i++) {
+            const rentValue = prop.rent[i] !== undefined ? prop.rent[i] : (eiffelModeEnabled ? 0 : '');
+            rentInputsHTML += `
+                <div class="flex flex-col">
+                    <label for="swal-prop-rent-${i}" class="text-sm text-gray-600 mb-1">${labels[i]}</label>
+                    <input id="swal-prop-rent-${i}" type="number" class="swal2-input w-full p-2 border-gray-300 rounded-md" value="${rentValue}" style="background-color: white; color: black; height: 40px; font-size: 16px;">
+                </div>
+            `;
+        }
+        rentInputsHTML += '</div>';
+    }
+
     Swal.fire({
         title: `Éditer: ${prop.name}`,
         html: `
             <div class="text-left p-2">
                 <label for="swal-prop-name" class="swal2-label">Nom de la Case</label>
-                <input id="swal-prop-name" class="swal2-input" value="${prop.name}">
+                <input id="swal-prop-name" class="swal2-input" value="${prop.name}" style="height: 40px; font-size: 16px;">
 
                 ${prop.price !== undefined ? `
-                    <label for="swal-prop-price" class="swal2-label mt-2">Prix d'achat</label>
-                    <input id="swal-prop-price" type="number" class="swal2-input" value="${prop.price}">
+                    <label for="swal-prop-price" class="swal2-label mt-4">Prix d'achat</label>
+                    <input id="swal-prop-price" type="number" class="swal2-input" value="${prop.price}" style="height: 40px; font-size: 16px;">
                 ` : ''}
 
-                ${prop.rent ? `
-                    <label class="swal2-label mt-2">Loyers (Base, 1M, 2M, 3M, 4M, Hôtel)</label>
-                    <div class="grid grid-cols-6 gap-1">
-                        ${prop.rent.map((r, i) => `<input id="swal-prop-rent-${i}" type="number" class="swal2-input text-xs" value="${r}">`).join('')}
-                    </div>
-                ` : ''}
+                ${rentInputsHTML}
+
                  ${prop.houseCost ? `
-                    <label for="swal-prop-housecost" class="swal2-label mt-2">Coût de construction</label>
-                    <input id="swal-prop-housecost" type="number" class="swal2-input" value="${prop.houseCost}">
+                    <label for="swal-prop-housecost" class="swal2-label mt-4">Coût de construction</label>
+                    <input id="swal-prop-housecost" type="number" class="swal2-input" value="${prop.houseCost}" style="height: 40px; font-size: 16px;">
                 ` : ''}
             </div>
         `,
         confirmButtonText: 'Sauvegarder',
         preConfirm: () => {
             // Save logic here
-            const newName = document.getElementById('swal-prop-name').value;
-            prop.name = newName;
+            prop.name = document.getElementById('swal-prop-name').value;
             
             if (prop.price !== undefined) {
                  prop.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0;
             }
              if (prop.rent) {
-                prop.rent = prop.rent.map((r, i) => parseInt(document.getElementById(`swal-prop-rent-${i}`).value, 10) || 0);
+                const rentLevels = eiffelModeEnabled ? 11 : 6;
+                for (let i = 0; i < rentLevels; i++) {
+                    prop.rent[i] = parseInt(document.getElementById(`swal-prop-rent-${i}`).value, 10) || 0;
+                }
             }
             if (prop.houseCost) {
                 prop.houseCost = parseInt(document.getElementById('swal-prop-housecost').value, 10) || 0;
