@@ -543,13 +543,6 @@
         </h1>
         <p class="text-green-300 mb-8">Configurez votre partie</p>
 
-        <div id="load-game-section" class="bg-green-900/50 p-4 rounded-lg mb-8">
-            <h3 class="text-xl font-bold mb-4 text-yellow-400 border-b border-green-600 pb-2">Charger une Partie</h3>
-            <div id="load-buttons-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button id="load-auto-save-btn" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-500 transition">Charger la dernière session</button>
-                <button id="load-named-save-btn" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-500 transition">Charger une partie...</button>
-            </div>
-        </div>
         
         <div class="mb-6">
             <label for="player-count" class="block text-lg font-bold mb-2">Nombre de Joueurs :</label>
@@ -679,11 +672,11 @@
                     <span>Utiliser Cartes Perso.</span>
                 </label>
             </div>
-            <button id="load-board-button" class="w-full mt-4 py-2 bg-teal-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-teal-500 transition">
-                Charger un Plateau
-            </button>
             <button id="manage-custom-button" class="w-full mt-4 py-2 bg-indigo-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-indigo-500 transition">
                 Gérer les Personnalisations
+            </button>
+            <button id="customize-rules-button" class="w-full mt-4 py-2 bg-purple-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-purple-500 transition">
+                Personnaliser les Règles
             </button>
         </div>
 
@@ -914,7 +907,6 @@ const contextualActionsEl = document.getElementById('contextualActions');
 
 // Game data
 const SPACES = 40;
-const PASS_GO_MONEY = 200;
 const RENT_MULTIPLIER_UTILITY = [4, 10]; // 1 utility: roll * 4; 2 utilities: roll * 10
 const CELL_POSITIONS = {}; 
 let isAnimating = false;
@@ -931,6 +923,14 @@ let totalHotels = 12; // Global hotel count for scarcity rule
 let isEditorMode = false;
 let stockMarket = {};
 const INITIAL_SHARES_PER_GROUP = 100;
+
+let customRules = {
+    startingMoney: 1500,
+    passGoMoney: 200,
+    eiffelBonus: 15000,
+    eiffelHotelReq: 3,
+    eiffelPassGo: 2000,
+};
 
 const playSound = (id) => {
     const sound = document.getElementById(id);
@@ -1488,11 +1488,6 @@ const filterLog = (type) => {
 document.addEventListener('DOMContentLoaded', () => {
     // Other initializations...
 
-    // Attach event listener for the load board button
-    const loadBoardButton = document.getElementById('load-board-button');
-    if (loadBoardButton) {
-        loadBoardButton.addEventListener('click', showLoadBoardMenu);
-    }
 
     // Fix for the player setup panels
     if (document.getElementById('player-count')) {
@@ -1500,43 +1495,69 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-const showCardEditor = (cardType) => {
+const showCardEditor = (cardType, forceEiffel = false) => {
     if (!isEditorMode) return;
 
-    const isEiffelTowerMode = document.getElementById('eiffel-tower-mode').checked;
+    let isEiffelTowerMode = forceEiffel;
     let cardDeck;
     let title;
 
-    if (cardType === 'CHANCE') {
-        cardDeck = isEiffelTowerMode ? CHANCE_CARDS_EIFFEL : CHANCE_CARDS;
-        title = 'Éditeur de Cartes Chance';
-    } else {
-        cardDeck = isEiffelTowerMode ? COMMUNITY_CHEST_CARDS_EIFFEL : COMMUNITY_CHEST_CARDS;
-        title = 'Éditeur de Cartes Caisse de Communauté';
-    }
+    const updateEditorView = () => {
+        if (cardType === 'CHANCE') {
+            cardDeck = isEiffelTowerMode ? CHANCE_CARDS_EIFFEL : CHANCE_CARDS;
+            title = `Éditeur de Cartes Chance ${isEiffelTowerMode ? '(Tour Eiffel)' : '(Normal)'}`;
+        } else {
+            cardDeck = isEiffelTowerMode ? COMMUNITY_CHEST_CARDS_EIFFEL : COMMUNITY_CHEST_CARDS;
+            title = `Éditeur de Cartes Caisse de Communauté ${isEiffelTowerMode ? '(Tour Eiffel)' : '(Normal)'}`;
+        }
 
-    const cardListHTML = cardDeck.map((card, index) => `
-        <div class="flex justify-between items-center p-2 bg-gray-700 rounded mb-2 text-white cursor-move" data-card-index="${index}">
-            <span class="text-sm text-left flex-grow">${card.text}</span>
-            <div>
-                <button onclick="showCardEditModal('${cardType}', ${index})" class="ml-4 px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-400">
-                    Éditer
-                </button>
-                <button onclick="deleteCard('${cardType}', ${index})" class="ml-2 px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-400">
-                    Supprimer
-                </button>
+        const cardListHTML = cardDeck.map((card, index) => `
+            <div class="flex justify-between items-center p-2 bg-gray-700 rounded mb-2 text-white cursor-move" data-card-index="${index}">
+                <span class="text-sm text-left flex-grow">${card.text}</span>
+            <input type="number" class="w-16 mx-2 p-1 text-center bg-gray-800 rounded" value="${card.weight || 1}" onchange="updateCardWeight('${cardType}', ${index}, this.value, ${isEiffelTowerMode})">
+                <div>
+                    <button onclick="showCardEditModal('${cardType}', ${index}, ${isEiffelTowerMode})" class="ml-4 px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-400">
+                        Éditer
+                    </button>
+                    <button onclick="deleteCard('${cardType}', ${index}, ${isEiffelTowerMode})" class="ml-2 px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-400">
+                        Supprimer
+                    </button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+
+        const swalContent = document.getElementById('swal2-html-container');
+        if (swalContent) {
+            swalContent.querySelector('#card-list-container').innerHTML = cardListHTML;
+            Swal.update({ title: title });
+        }
+    };
+
+    updateEditorView(); // Call it once to initialize
 
     Swal.fire({
         title: title,
         html: `
-            <p class="text-sm text-yellow-300 mb-2">Mode Tour Eiffel: ${isEiffelTowerMode ? 'Activé' : 'Désactivé'}</p>
-            <div id="card-list-container" class="max-h-80 overflow-y-auto p-2 bg-green-900/50 rounded">
-                ${cardListHTML}
+            <div class="flex justify-center items-center mb-4">
+                <span class="mr-3 text-white">Mode Normal</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="eiffel-mode-toggle-cards" class="sr-only peer" ${isEiffelTowerMode ? 'checked' : ''}>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+                <span class="ml-3 text-white">Mode Tour Eiffel</span>
             </div>
-            <button onclick="showCardEditModal('${cardType}', -1)" class="w-full mt-4 py-2 bg-green-500 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-green-400 transition">
+            <div id="card-list-container" class="max-h-80 overflow-y-auto p-2 bg-green-900/50 rounded">
+                ${cardDeck.map((card, index) => `
+                    <div class="flex justify-between items-center p-2 bg-gray-700 rounded mb-2 text-white cursor-move" data-card-index="${index}">
+                        <span class="text-sm text-left flex-grow">${card.text}</span>
+                        <div>
+                            <button onclick="showCardEditModal('${cardType}', ${index}, ${isEiffelTowerMode})" class="ml-4 px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-400">Éditer</button>
+                            <button onclick="deleteCard('${cardType}', ${index}, ${isEiffelTowerMode})" class="ml-2 px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-400">Supprimer</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <button onclick="showCardEditModal('${cardType}', -1, document.getElementById('eiffel-mode-toggle-cards').checked)" class="w-full mt-4 py-2 bg-green-500 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-green-400 transition">
                 Ajouter une nouvelle carte
             </button>
         `,
@@ -1544,6 +1565,11 @@ const showCardEditor = (cardType) => {
         confirmButtonText: 'Fermer',
         width: '600px',
         didOpen: () => {
+            document.getElementById('eiffel-mode-toggle-cards').addEventListener('change', (e) => {
+                isEiffelTowerMode = e.target.checked;
+                updateEditorView();
+            });
+
             const container = document.getElementById('card-list-container');
             new Sortable(container, {
                 animation: 150,
@@ -1551,8 +1577,6 @@ const showCardEditor = (cardType) => {
                     const { oldIndex, newIndex } = evt;
                     const movedItem = cardDeck.splice(oldIndex, 1)[0];
                     cardDeck.splice(newIndex, 0, movedItem);
-                    // No need to re-render, Sortable handles the DOM change.
-                    // We just updated the underlying array.
                     appendLog('Ordre des cartes modifié.', 'system');
                 }
             });
@@ -1560,8 +1584,17 @@ const showCardEditor = (cardType) => {
     });
 };
 
-const deleteCard = (cardType, cardIndex) => {
-    const isEiffelTowerMode = document.getElementById('eiffel-tower-mode').checked;
+function updateCardWeight(cardType, cardIndex, weight, isEiffelTowerMode) {
+    let cardDeck;
+    if (cardType === 'CHANCE') {
+        cardDeck = isEiffelTowerMode ? CHANCE_CARDS_EIFFEL : CHANCE_CARDS;
+    } else {
+        cardDeck = isEiffelTowerMode ? COMMUNITY_CHEST_CARDS_EIFFEL : COMMUNITY_CHEST_CARDS;
+    }
+    cardDeck[cardIndex].weight = parseInt(weight, 10);
+}
+
+const deleteCard = (cardType, cardIndex, isEiffelTowerMode) => {
     let cardDeck;
 
     if (cardType === 'CHANCE') {
@@ -1575,8 +1608,7 @@ const deleteCard = (cardType, cardIndex) => {
     appendLog(`Carte ${cardType} #${cardIndex + 1} supprimée.`, 'system');
 };
 
-const showCardEditModal = (cardType, cardIndex) => {
-    const isEiffelTowerMode = document.getElementById('eiffel-tower-mode').checked;
+const showCardEditModal = (cardType, cardIndex, isEiffelTowerMode) => {
     let cardDeck;
 
     if (cardType === 'CHANCE') {
@@ -1729,7 +1761,6 @@ const deleteNamedSave = (saveName) => {
             localStorage.removeItem(`monopoly_save_${saveName}`);
 
             // Refresh the load menu
-            showLoadGameMenu();
         }
     });
 };
@@ -2855,22 +2886,22 @@ const checkForEiffelBonus = (player) => {
         return acc;
     }, 0);
 
-    if (hotelCount >= 3) {
+    if (hotelCount >= customRules.eiffelHotelReq) {
         player.hasEiffelMultiplier = true;
-        player.money += 15000;
-        player.passGoAmount = 2000; // Permanent change to pass Go amount
-        appendLog(`${player.name} a construit son 3ème hôtel ! Le mode "High Roller" est activé !`, 'system');
+        player.money += customRules.eiffelBonus;
+        player.passGoAmount = customRules.eiffelPassGo; // Permanent change to pass Go amount
+        appendLog(`${player.name} a construit son ${customRules.eiffelHotelReq}ème hôtel ! Le mode "High Roller" est activé !`, 'system');
         Swal.fire({
             title: 'High Roller Activé !',
             html: `
                 <p class="text-lg">Félicitations, ${player.name} ! Vous avez construit votre troisième hôtel.</p>
-                <p class="font-bold text-2xl text-green-600 mt-2">Vous recevez un bonus de 15,000€ !</p>
+                <p class="font-bold text-2xl text-green-600 mt-2">Vous recevez un bonus de ${customRules.eiffelBonus}€ !</p>
                 <hr class="my-4">
                 <p class="text-left font-bold text-red-700">NOUVELLES RÈGLES POUR VOUS :</p>
                 <ul class="list-disc list-inside text-left mt-2">
                     <li>L'achat de nouvelles propriétés coûte maintenant <strong>10x</strong> le prix affiché.</li>
                     <li>Pour construire des hôtels supérieurs, vous devrez d'abord payer <strong>10x</strong> le prix du terrain pour l'améliorer.</li>
-                    <li>Passer par la case DÉPART vous rapporte maintenant <strong>2000€</strong>.</li>
+                    <li>Passer par la case DÉPART vous rapporte maintenant <strong>${customRules.eiffelPassGo}€</strong>.</li>
                 </ul>
             `,
             icon: 'success',
@@ -3119,9 +3150,20 @@ const handleCardAction = (player, type) => {
     }
 
     const deckSize = type === "CHANCE" ? chanceCount : communityCount;
-    const activeDeck = fullDeck.slice(0, deckSize);
+    let activeDeck = fullDeck.slice(0, deckSize);
 
-    const card = activeDeck[Math.floor(Math.random() * activeDeck.length)];
+    // Weighted card drawing
+    const totalWeight = activeDeck.reduce((acc, card) => acc + (card.weight || 1), 0);
+    let random = Math.random() * totalWeight;
+    let card;
+    for (let i = 0; i < activeDeck.length; i++) {
+        random -= (activeDeck[i].weight || 1);
+        if (random < 0) {
+            card = activeDeck[i];
+            break;
+        }
+    }
+    if (!card) card = activeDeck[activeDeck.length - 1]; // Fallback
 
     const pileId = type === "CHANCE" ? '#chance-pile' : '#community-chest-pile';
     const pileEl = document.querySelector(pileId);
@@ -3144,7 +3186,7 @@ const handleCardAction = (player, type) => {
                 case "MOVE_TO":
                     player.position = card.action.target;
                      if (card.action.collectGo) {
-                        const goAmount = PASS_GO_MONEY * multiplier;
+                        const goAmount = (player.hasEiffelMultiplier ? customRules.eiffelPassGo : customRules.passGoMoney) * multiplier;
                         player.money += goAmount;
                         appendLog(`${player.name} atterrit sur DÉPART et reçoit ${goAmount}€.` + (multiplier > 1 ? ` (Bonus x${multiplier})` : ''), 'system');
                     }
@@ -3153,8 +3195,9 @@ const handleCardAction = (player, type) => {
                     return; // handleLandOnSpace will call switchTurn
                 case "MOVE_TO_PASS_GO":
                     if (player.position > card.action.target) {
-                        player.money += player.passGoAmount;
-                        appendLog(`${player.name} passe par DÉPART et reçoit ${player.passGoAmount}€.`, 'system');
+                        const goAmount = player.hasEiffelMultiplier ? customRules.eiffelPassGo : customRules.passGoMoney;
+                        player.money += goAmount;
+                        appendLog(`${player.name} passe par DÉPART et reçoit ${goAmount}€.`, 'system');
                     }
                     player.position = card.action.target;
                     positionToken(player, players.findIndex(t => t.id === player.id));
@@ -3218,8 +3261,9 @@ const handleCardAction = (player, type) => {
                 case "NEAREST_RAILROAD":
                     const nearestRR = findNearest(player.position, "RAILROAD");
                     if (player.position > nearestRR) {
-                        player.money += PASS_GO_MONEY;
-                        appendLog(`${player.name} passe par DÉPART et reçoit ${PASS_GO_MONEY}€.`, 'system');
+                        const goAmount = player.hasEiffelMultiplier ? customRules.eiffelPassGo : customRules.passGoMoney;
+                        player.money += goAmount;
+                        appendLog(`${player.name} passe par DÉPART et reçoit ${goAmount}€.`, 'system');
                     }
                     player.position = nearestRR;
                     positionToken(player, players.findIndex(t => t.id === player.id));
@@ -3254,7 +3298,9 @@ const handleCardAction = (player, type) => {
                 case "MOVE_TO_NEAREST_UTILITY_AND_PAY":
                      const nearestUtilToPay = findNearest(player.position, "UTILITY");
                     if (player.position > nearestUtilToPay) {
-                        player.money += PASS_GO_MONEY;
+                        const goAmount = player.hasEiffelMultiplier ? customRules.eiffelPassGo : customRules.passGoMoney;
+                        player.money += goAmount;
+                        appendLog(`${player.name} passe par DÉPART et reçoit ${goAmount}€.`, 'system');
                     }
                     player.position = nearestUtilToPay;
                     positionToken(player, players.findIndex(t => t.id === player.id));
@@ -3670,39 +3716,55 @@ const setupBoardEditor = () => {
 };
 
 
-const showPropertyEditor = (cellId) => {
+const showPropertyEditor = (cellId, forceEiffel = false) => {
     if (!isEditorMode) return;
 
-    const prop = PROPERTIES[cellId];
-    if (!prop) return;
+    const isEiffelTowerMode = forceEiffel;
+    
+    // Determine which property object to use as the base for the editor
+    let propForEditing;
+    if (isEiffelTowerMode) {
+        const eiffelProp = PROPERTIES_EIFFEL_TOWER.find(p => p.id === cellId);
+        // Fallback to base property but ensure rent array is correct length for editor
+        const baseProp = PROPERTIES.find(p => p.id === cellId) || {};
+        propForEditing = JSON.parse(JSON.stringify(eiffelProp || baseProp));
+        if (propForEditing.type === 'PROPERTY' && (!propForEditing.rent || propForEditing.rent.length < 11)) {
+            const existingRents = propForEditing.rent || [];
+            propForEditing.rent = Array(11).fill(0);
+            existingRents.forEach((rent, i) => propForEditing.rent[i] = rent);
+        }
+    } else {
+        const standardProp = PROPERTIES.find(p => p.id === cellId);
+        if (!standardProp) {
+            console.error(`Property with ID ${cellId} not found in PROPERTIES.`);
+            return;
+        }
+        propForEditing = JSON.parse(JSON.stringify(standardProp));
+    }
+    
+    // Use the name from the base PROPERTIES array for the title, as it's the one displayed on the board
+    const basePropForTitle = PROPERTIES.find(p => p.id === cellId);
+    const titleName = basePropForTitle ? basePropForTitle.name : propForEditing.name;
 
-    const isEiffelTowerMode = document.getElementById('eiffel-tower-mode').checked;
-
-    const generateEditorHTML = (currentProp) => {
-        const type = document.getElementById('swal-prop-type') ? document.getElementById('swal-prop-type').value : currentProp.type;
-        
+    const generateEditorHTML = () => {
+        const type = document.getElementById('swal-prop-type') ? document.getElementById('swal-prop-type').value : propForEditing.type;
         const eiffelTowerBanner = isEiffelTowerMode ? `<div class="p-2 bg-yellow-200 text-yellow-800 rounded-lg text-center font-bold mb-4">Mode Tour Eiffel Actif</div>` : '';
-
-        const groupOptions = Object.keys(STOCK_GROUP_DETAILS).map(key =>
-            `<option value="${key}" ${currentProp.group === key ? 'selected' : ''}>${STOCK_GROUP_DETAILS[key].name}</option>`
-        ).join('');
+        const groupOptions = Object.keys(STOCK_GROUP_DETAILS).map(key => `<option value="${key}" ${propForEditing.group === key ? 'selected' : ''}>${STOCK_GROUP_DETAILS[key].name}</option>`).join('');
 
         const colorSelectorHTML = `
             <div class="mt-4">
                 <label for="swal-prop-group" class="text-white">Groupe de couleur</label>
                 <select id="swal-prop-group" class="swal2-select w-full text-base" style="color: black !important; background-color: white !important; padding: 0.5rem; height: auto;">
-                    <option value="CUSTOM" ${!currentProp.group || currentProp.group === 'CUSTOM' ? 'selected' : ''}>Personnalisée</option>
+                    <option value="CUSTOM" ${!propForEditing.group || propForEditing.group === 'CUSTOM' ? 'selected' : ''}>Personnalisée</option>
                     ${groupOptions}
                 </select>
             </div>
-            <div id="custom-color-container" class="mt-4 ${currentProp.group && currentProp.group !== 'CUSTOM' ? 'hidden' : ''}">
+            <div id="custom-color-container" class="mt-4 ${propForEditing.group && propForEditing.group !== 'CUSTOM' ? 'hidden' : ''}">
                 <label for="swal-prop-color" class="text-white">Couleur Personnalisée</label>
-                <input id="swal-prop-color" type="color" class="swal2-input w-full" value="${currentProp.color || '#ffffff'}" style="padding: 0.5rem; height: 3rem;">
-            </div>
-        `;
+                <input id="swal-prop-color" type="color" class="swal2-input w-full" value="${propForEditing.color || '#ffffff'}" style="padding: 0.5rem; height: 3rem;">
+            </div>`;
 
         let dynamicFieldsHTML = '';
-
         switch (type) {
             case 'PROPERTY':
                 const rentLevels = isEiffelTowerMode ? 11 : 6;
@@ -3711,42 +3773,34 @@ const showPropertyEditor = (cellId) => {
                     : ['Base', '1 Maison', '2 Maisons', '3 Maisons', '4 Maisons', 'Hôtel'];
                 let rentInputs = '';
                 for (let i = 0; i < rentLevels; i++) {
-                    rentInputs += `
-                        <div>
-                            <label for="swal-prop-rent-${i}" class="text-sm text-white">${rentLabels[i]}</label>
-                            <input id="swal-prop-rent-${i}" type="number" class="swal2-input w-full text-base" value="${(currentProp.rent && currentProp.rent[i]) || 0}" style="padding: 0.5rem; height: auto;">
-                        </div>
-                    `;
+                    rentInputs += `<div>
+                        <label for="swal-prop-rent-${i}" class="text-sm text-white">${rentLabels[i]}</label>
+                        <input id="swal-prop-rent-${i}" type="number" class="swal2-input w-full text-base" value="${(propForEditing.rent && propForEditing.rent[i]) || 0}" style="padding: 0.5rem; height: auto;">
+                    </div>`;
                 }
-                dynamicFieldsHTML = `
-                    ${eiffelTowerBanner}
-                    ${colorSelectorHTML}
-                    <div class="mt-4"><label for="swal-prop-price" class="text-white">Prix d'achat</label><input id="swal-prop-price" type="number" class="swal2-input w-full text-base" value="${currentProp.price || 0}" style="padding: 0.5rem; height: auto;"></div>
-                    <div class="mt-4"><label for="swal-prop-housecost" class="text-white">Coût Maison (Base)</label><input id="swal-prop-housecost" type="number" class="swal2-input w-full text-base" value="${currentProp.houseCost || 0}" style="padding: 0.5rem; height: auto;"></div>
-                    ${isEiffelTowerMode ? `<div class="mt-4"><label for="swal-prop-superior-cost" class="text-white">Coût Hôtel Supérieur / Tour</label><input id="swal-prop-superior-cost" type="number" class="swal2-input w-full text-base" value="${currentProp.superiorHouseCost || (currentProp.houseCost * 10) || 0}" style="padding: 0.5rem; height: auto;"></div>` : ''}
+                dynamicFieldsHTML = `${eiffelTowerBanner}${colorSelectorHTML}
+                    <div class="mt-4"><label for="swal-prop-price" class="text-white">Prix d'achat</label><input id="swal-prop-price" type="number" class="swal2-input w-full text-base" value="${propForEditing.price || 0}" style="padding: 0.5rem; height: auto;"></div>
+                    <div class="mt-4"><label for="swal-prop-housecost" class="text-white">Coût Maison (Base)</label><input id="swal-prop-housecost" type="number" class="swal2-input w-full text-base" value="${propForEditing.houseCost || 0}" style="padding: 0.5rem; height: auto;"></div>
+                    ${isEiffelTowerMode ? `<div class="mt-4"><label for="swal-prop-superior-cost" class="text-white">Coût Hôtel Supérieur / Tour</label><input id="swal-prop-superior-cost" type="number" class="swal2-input w-full text-base" value="${propForEditing.superiorHouseCost || (propForEditing.houseCost * 10) || 0}" style="padding: 0.5rem; height: auto;"></div>` : ''}
                     <h4 class="text-lg font-bold mt-4 mb-2 text-yellow-300">Loyers</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2">${rentInputs}</div>
-                `;
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2">${rentInputs}</div>`;
                 break;
             case 'RAILROAD':
-            case 'UTILITY':
-                dynamicFieldsHTML = `
-                    <div class="mt-4"><label for="swal-prop-price" class="text-white">Prix d'achat</label><input id="swal-prop-price" type="number" class="swal2-input w-full text-base" value="${currentProp.price || 0}" style="padding: 0.5rem; height: auto;"></div>
-                `;
-                if(type === 'RAILROAD') {
-                    dynamicFieldsHTML += `<h4 class="text-lg font-bold mt-4 mb-2 text-yellow-300">Loyers</h4>
+                dynamicFieldsHTML = `<div class="mt-4"><label for="swal-prop-price" class="text-white">Prix d'achat</label><input id="swal-prop-price" type="number" class="swal2-input w-full text-base" value="${propForEditing.price || 0}" style="padding: 0.5rem; height: auto;"></div>
+                    <h4 class="text-lg font-bold mt-4 mb-2 text-yellow-300">Loyers</h4>
                     <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-                         <div><label for="swal-prop-rent-0" class="text-sm text-white">1 Gare</label><input id="swal-prop-rent-0" type="number" class="swal2-input w-full text-base" value="${(currentProp.rent && currentProp.rent[0]) || 0}" style="padding: 0.5rem; height: auto;"></div>
-                         <div><label for="swal-prop-rent-1" class="text-sm text-white">2 Gares</label><input id="swal-prop-rent-1" type="number" class="swal2-input w-full text-base" value="${(currentProp.rent && currentProp.rent[1]) || 0}" style="padding: 0.5rem; height: auto;"></div>
-                         <div><label for="swal-prop-rent-2" class="text-sm text-white">3 Gares</label><input id="swal-prop-rent-2" type="number" class="swal2-input w-full text-base" value="${(currentProp.rent && currentProp.rent[2]) || 0}" style="padding: 0.5rem; height: auto;"></div>
-                         <div><label for="swal-prop-rent-3" class="text-sm text-white">4 Gares</label><input id="swal-prop-rent-3" type="number" class="swal2-input w-full text-base" value="${(currentProp.rent && currentProp.rent[3]) || 0}" style="padding: 0.5rem; height: auto;"></div>
+                         <div><label for="swal-prop-rent-0" class="text-sm text-white">1 Gare</label><input id="swal-prop-rent-0" type="number" class="swal2-input w-full text-base" value="${(propForEditing.rent && propForEditing.rent[0]) || 0}" style="padding: 0.5rem; height: auto;"></div>
+                         <div><label for="swal-prop-rent-1" class="text-sm text-white">2 Gares</label><input id="swal-prop-rent-1" type="number" class="swal2-input w-full text-base" value="${(propForEditing.rent && propForEditing.rent[1]) || 0}" style="padding: 0.5rem; height: auto;"></div>
+                         <div><label for="swal-prop-rent-2" class="text-sm text-white">3 Gares</label><input id="swal-prop-rent-2" type="number" class="swal2-input w-full text-base" value="${(propForEditing.rent && propForEditing.rent[2]) || 0}" style="padding: 0.5rem; height: auto;"></div>
+                         <div><label for="swal-prop-rent-3" class="text-sm text-white">4 Gares</label><input id="swal-prop-rent-3" type="number" class="swal2-input w-full text-base" value="${(propForEditing.rent && propForEditing.rent[3]) || 0}" style="padding: 0.5rem; height: auto;"></div>
                     </div>`;
-                } else {
-                     dynamicFieldsHTML += `<p class="text-white text-sm mt-4">Le loyer est basé sur le lancer de dés (x4 pour 1 service, x10 pour 2).</p>`;
-                }
+                break;
+            case 'UTILITY':
+                dynamicFieldsHTML = `<div class="mt-4"><label for="swal-prop-price" class="text-white">Prix d'achat</label><input id="swal-prop-price" type="number" class="swal2-input w-full text-base" value="${propForEditing.price || 0}" style="padding: 0.5rem; height: auto;"></div>
+                                     <p class="text-white text-sm mt-4">Le loyer est basé sur le lancer de dés (x4 pour 1 service, x10 pour 2).</p>`;
                 break;
             case 'TAX':
-                 dynamicFieldsHTML = `<div class="mt-4"><label for="swal-prop-fine" class="text-white">Montant de la taxe</label><input id="swal-prop-fine" type="number" class="swal2-input w-full text-base" value="${currentProp.fine || 0}" style="padding: 0.5rem; height: auto;"></div>`;
+                 dynamicFieldsHTML = `<div class="mt-4"><label for="swal-prop-fine" class="text-white">Montant de la taxe</label><input id="swal-prop-fine" type="number" class="swal2-input w-full text-base" value="${propForEditing.fine || 0}" style="padding: 0.5rem; height: auto;"></div>`;
                 break;
             default:
                  dynamicFieldsHTML = `<p class="text-white text-sm mt-4">Ce type de case n'a pas de paramètres modifiables.</p>`;
@@ -3756,27 +3810,33 @@ const showPropertyEditor = (cellId) => {
     };
 
     Swal.fire({
-        title: `Éditer: ${prop.name}`,
+        title: `Éditer: ${titleName}`,
         html: `
             <div class="text-left p-2">
+                <div class="flex justify-center items-center mb-4">
+                    <span class="mr-3 text-white">Mode Normal</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="eiffel-mode-toggle-props" class="sr-only peer" ${isEiffelTowerMode ? 'checked' : ''}>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    </label>
+                    <span class="ml-3 text-white">Mode Tour Eiffel</span>
+                </div>
                 <div>
                     <label for="swal-prop-name" class="text-white">Nom de la Case</label>
-                    <input id="swal-prop-name" class="swal2-input w-full text-base" value="${prop.name}" style="color: black !important; background-color: white !important; padding: 0.5rem; height: auto;">
+                    <input id="swal-prop-name" class="swal2-input w-full text-base" value="${propForEditing.name}" style="color: black !important; background-color: white !important; padding: 0.5rem; height: auto;">
                 </div>
                 <div class="mt-4">
                     <label for="swal-prop-type" class="text-white">Type de Case</label>
                     <select id="swal-prop-type" class="swal2-select w-full text-base" style="color: black !important; background-color: white !important; padding: 0.5rem; height: auto;">
-                        <option value="PROPERTY" ${prop.type === 'PROPERTY' ? 'selected' : ''}>Propriété</option>
-                        <option value="RAILROAD" ${prop.type === 'RAILROAD' ? 'selected' : ''}>Gare</option>
-                        <option value="UTILITY" ${prop.type === 'UTILITY' ? 'selected' : ''}>Service Public</option>
-                        <option value="TAX" ${prop.type === 'TAX' ? 'selected' : ''}>Taxe</option>
-                        <option value="CHANCE" ${prop.type === 'CHANCE' ? 'selected' : ''}>Chance</option>
-                        <option value="COMMUNITY_CHEST" ${prop.type === 'COMMUNITY_CHEST' ? 'selected' : ''}>Caisse de Communauté</option>
+                        <option value="PROPERTY" ${propForEditing.type === 'PROPERTY' ? 'selected' : ''}>Propriété</option>
+                        <option value="RAILROAD" ${propForEditing.type === 'RAILROAD' ? 'selected' : ''}>Gare</option>
+                        <option value="UTILITY" ${propForEditing.type === 'UTILITY' ? 'selected' : ''}>Service Public</option>
+                        <option value="TAX" ${propForEditing.type === 'TAX' ? 'selected' : ''}>Taxe</option>
+                        <option value="CHANCE" ${propForEditing.type === 'CHANCE' ? 'selected' : ''}>Chance</option>
+                        <option value="COMMUNITY_CHEST" ${propForEditing.type === 'COMMUNITY_CHEST' ? 'selected' : ''}>Caisse de Communauté</option>
                     </select>
                 </div>
-                <div id="dynamic-editor-fields">
-                    ${generateEditorHTML(prop)}
-                </div>
+                <div id="dynamic-editor-fields">${generateEditorHTML()}</div>
             </div>
         `,
         background: '#14532d',
@@ -3785,6 +3845,10 @@ const showPropertyEditor = (cellId) => {
         cancelButtonText: 'Supprimer',
         width: '600px',
         didOpen: () => {
+            document.getElementById('eiffel-mode-toggle-props').addEventListener('change', (e) => {
+                showPropertyEditor(cellId, e.target.checked);
+            });
+
             const typeSelector = document.getElementById('swal-prop-type');
             const dynamicFieldsContainer = document.getElementById('dynamic-editor-fields');
 
@@ -3796,8 +3860,7 @@ const showPropertyEditor = (cellId) => {
             };
 
             const updateDynamicFields = () => {
-                const tempProp = { ...prop, type: typeSelector.value };
-                dynamicFieldsContainer.innerHTML = generateEditorHTML(tempProp);
+                dynamicFieldsContainer.innerHTML = generateEditorHTML();
                 const groupSelector = document.getElementById('swal-prop-group');
                 if (groupSelector) {
                     groupSelector.addEventListener('change', handleGroupChange);
@@ -3805,78 +3868,77 @@ const showPropertyEditor = (cellId) => {
             };
             
             typeSelector.addEventListener('change', updateDynamicFields);
-            handleGroupChange(); // Initial check
+            handleGroupChange();
             const groupSelectorInitial = document.getElementById('swal-prop-group');
             if (groupSelectorInitial) {
                 groupSelectorInitial.addEventListener('change', handleGroupChange);
             }
         },
         preConfirm: () => {
+            const targetArray = isEiffelTowerMode ? PROPERTIES_EIFFEL_TOWER : PROPERTIES;
+            const propIndex = targetArray.findIndex(p => p.id === cellId);
+            if (propIndex === -1) {
+                console.error(`Could not find property with id ${cellId} to save.`);
+                return;
+            }
+            const propToUpdate = targetArray[propIndex];
             const newType = document.getElementById('swal-prop-type').value;
-
             const typeProperties = {
                 PROPERTY: ['price', 'rent', 'houseCost', 'group', 'color', 'superiorHouseCost'],
                 RAILROAD: ['price', 'rent', 'group'],
                 UTILITY: ['price', 'group'],
                 TAX: ['fine'],
             };
-            const allEditableKeys = ['price', 'rent', 'houseCost', 'group', 'color', 'fine', 'superiorHouseCost'];
-            const keepKeys = typeProperties[newType] || [];
-            allEditableKeys.forEach(key => {
-                if (!keepKeys.includes(key)) delete prop[key];
+            Object.keys(propToUpdate).forEach(key => {
+                if (!['id', 'name', 'type'].includes(key) && !(typeProperties[newType] || []).includes(key)) {
+                    delete propToUpdate[key];
+                }
             });
 
-            prop.name = document.getElementById('swal-prop-name').value;
-            prop.type = newType;
+            propToUpdate.name = document.getElementById('swal-prop-name').value;
+            propToUpdate.type = newType;
+
+            if (!isEiffelTowerMode) {
+                const baseProp = PROPERTIES.find(p => p.id === cellId);
+                const eiffelProp = PROPERTIES_EIFFEL_TOWER.find(p => p.id === cellId);
+                if (baseProp) baseProp.name = propToUpdate.name;
+                if (eiffelProp) eiffelProp.name = propToUpdate.name;
+            }
 
             const groupSelector = document.getElementById('swal-prop-group');
             if (groupSelector) {
-                if (groupSelector.value === 'CUSTOM') {
-                    prop.group = null;
-                    prop.color = document.getElementById('swal-prop-color').value;
-                } else {
-                    prop.group = groupSelector.value;
-                    prop.color = null; // Let the group define the color
-                }
+                propToUpdate.group = groupSelector.value === 'CUSTOM' ? null : groupSelector.value;
+                propToUpdate.color = groupSelector.value === 'CUSTOM' ? document.getElementById('swal-prop-color').value : null;
             }
             
-            switch(prop.type) {
+            switch(propToUpdate.type) {
                 case 'PROPERTY':
-                    prop.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0;
-                    prop.houseCost = parseInt(document.getElementById('swal-prop-housecost').value, 10) || 0;
-                    if(isEiffelTowerMode) {
-                        prop.superiorHouseCost = parseInt(document.getElementById('swal-prop-superior-cost').value, 10) || prop.houseCost * 10;
-                    }
+                    propToUpdate.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0;
+                    propToUpdate.houseCost = parseInt(document.getElementById('swal-prop-housecost').value, 10) || 0;
+                    propToUpdate.rent = [];
                     const rentLevels = isEiffelTowerMode ? 11 : 6;
-                    prop.rent = [];
                     for (let i = 0; i < rentLevels; i++) {
-                        prop.rent[i] = parseInt(document.getElementById(`swal-prop-rent-${i}`).value, 10) || 0;
+                        propToUpdate.rent[i] = parseInt(document.getElementById(`swal-prop-rent-${i}`).value, 10) || 0;
                     }
                     break;
                 case 'RAILROAD':
-                    prop.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0;
-                    prop.rent = [];
-                    for(let i=0; i<4; i++) {
-                        prop.rent[i] = parseInt(document.getElementById(`swal-prop-rent-${i}`).value, 10) || 0;
-                    }
-                    prop.group = "RAILROAD"; // Force group for railroads
+                    propToUpdate.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0;
+                    propToUpdate.rent = Array(4).fill(0).map((_, i) => parseInt(document.getElementById(`swal-prop-rent-${i}`).value, 10) || 0);
+                    propToUpdate.group = "RAILROAD";
                     break;
                 case 'UTILITY':
-                     prop.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0;
-                     prop.group = "UTILITY"; // Force group for utilities
+                     propToUpdate.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0;
+                     propToUpdate.group = "UTILITY";
                      break;
                 case 'TAX':
-                    prop.fine = parseInt(document.getElementById('swal-prop-fine').value, 10) || 0;
+                    propToUpdate.fine = parseInt(document.getElementById('swal-prop-fine').value, 10) || 0;
                     break;
             }
 
             renderBoard();
-            renderTokens(); // <-- FIX: Redraw tokens after board is rebuilt
-            // IMPORTANT: Re-attach the editor listeners after re-rendering the board
-            if (isEditorMode) {
-                setupBoardEditor();
-            }
-            appendLog(`La case ${cellId} (${prop.name}) a été mise à jour.`, 'system');
+            renderTokens();
+            if (isEditorMode) setupBoardEditor();
+            appendLog(`La case ${cellId} (${propToUpdate.name}) a été mise à jour en mode ${isEiffelTowerMode ? 'Tour Eiffel' : 'Normal'}.`, 'system');
         }
     }).then((result) => {
         if (result.dismiss === Swal.DismissReason.cancel) {
@@ -4187,9 +4249,10 @@ const moveToken = (playerData, steps, isDouble) => {
         const nextCell = CELL_POSITIONS[nextPos];
         
         if (nextPos === 0 && i < steps - 1) {
-            playerData.money += playerData.passGoAmount;
-            playerData.stats.moneyEarned += playerData.passGoAmount;
-            appendLog(`${playerData.name} passe par DÉPART et reçoit ${playerData.passGoAmount}€.`, 'system');
+            const goAmount = playerData.hasEiffelMultiplier ? customRules.eiffelPassGo : customRules.passGoMoney;
+            playerData.money += goAmount;
+            playerData.stats.moneyEarned += goAmount;
+            appendLog(`${playerData.name} passe par DÉPART et reçoit ${goAmount}€.`, 'system');
             renderPlayerCards();
         }
 
@@ -6307,7 +6370,7 @@ const initializeGame = () => {
             icon: `<i class="fas ${setup.pawn.icon}" style="color: #fff;"></i>`,
             position: 0,
             isActive: i === 1, // First player is active
-            money: 1500,
+            money: customRules.startingMoney,
             properties: [],
             inJail: false,
             jailTurns: 0,
@@ -6324,7 +6387,7 @@ const initializeGame = () => {
                 propertiesBought: 0
             },
             hasEiffelMultiplier: false,
-            passGoAmount: PASS_GO_MONEY,
+            passGoAmount: customRules.passGoMoney,
             stocks: {}
         });
     }
@@ -6712,38 +6775,12 @@ themeSelector.addEventListener('change', (e) => {
 });
 
 
-const showLoadGameMenu = () => {
-    const namedSaves = JSON.parse(localStorage.getItem(NAMED_SAVES_INDEX_KEY)) || [];
-
-    if (namedSaves.length === 0) {
-        Swal.fire('Aucune sauvegarde', 'Vous n\'avez aucune partie sauvegardée sous un nom.', 'info');
-        return;
-    }
-
-    const savesHTML = namedSaves.map(saveName => `
-        <div class="flex justify-between items-center p-2 bg-green-700 rounded mb-2">
-            <span class="text-white">${saveName}</span>
-            <div>
-                <button onclick="loadGameState('${saveName}')" class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-400">Charger</button>
-                <button onclick="deleteNamedSave('${saveName}')" class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-500">Supprimer</button>
-            </div>
-        </div>
-    `).join('');
-
-    Swal.fire({
-        title: 'Charger une partie',
-        html: `<div class="max-h-64 overflow-y-auto">${savesHTML}</div>`,
-        background: '#14532d',
-        showConfirmButton: false,
-        showCancelButton: true,
-        cancelButtonText: 'Fermer'
-    });
-};
 
 // Initial setup
 document.addEventListener('DOMContentLoaded', () => {
     // Populate theme selector
     const themeSelector = document.getElementById('theme-selector');
+    THEMES['custom'] = { name: 'Personnalisé', colors: {} };
     for (const [key, theme] of Object.entries(THEMES)) {
         const option = document.createElement('option');
         option.value = key;
@@ -6775,41 +6812,112 @@ document.addEventListener('DOMContentLoaded', () => {
     // Card Config Modal
     document.getElementById('manage-custom-button').addEventListener('click', showCustomizationManager);
 
-    const showLoadBoardMenu = async () => {
-        let savedBoards = [];
-        try {
-            const snapshot = await db.collection('customBoards').orderBy('createdAt', 'desc').get();
-            snapshot.forEach(doc => {
-                savedBoards.push({ id: doc.id, ...doc.data() });
-            });
-        } catch (error) {
-            console.error("Error loading custom boards: ", error);
-            Swal.fire('Erreur', 'Impossible de charger les plateaux sauvegardés.', 'error');
-            return;
-        }
+    document.getElementById('customize-rules-button').addEventListener('click', showRulesCustomizationModal);
 
-        const boardListHTML = savedBoards.length > 0
-            ? savedBoards.map(board => `
-                <div class="flex justify-between items-center p-2 bg-green-700 rounded mb-2">
-                    <span class="text-white">${board.name}</span>
-                    <div>
-                        <button onclick="loadSelectedBoard('${board.id}')" class="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-400">Charger</button>
-                    </div>
-                </div>
-            `).join('')
-            : '<p class="text-green-300 italic">Aucun plateau personnalisé sauvegardé.</p>';
-
+    function showRulesCustomizationModal() {
         Swal.fire({
-            title: 'Charger un Plateau Personnalisé',
+            title: 'Personnaliser les Règles',
             html: `
-                <div id="swal-board-list" class="max-h-64 overflow-y-auto p-2 bg-green-900/50 rounded">
-                    ${boardListHTML}
+                <div class="text-left p-4">
+                    <h3 class="text-lg font-bold text-yellow-400 mb-2">Règles Générales</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="swal-starting-money" class="text-white">Argent de départ</label>
+                            <input id="swal-starting-money" type="number" class="swal2-input w-full" value="${customRules.startingMoney}">
+                        </div>
+                        <div>
+                            <label for="swal-pass-go-money" class="text-white">Argent case départ</label>
+                            <input id="swal-pass-go-money" type="number" class="swal2-input w-full" value="${customRules.passGoMoney}">
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-yellow-400 mt-6 mb-2">Règles Mode Tour Eiffel</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="swal-eiffel-bonus" class="text-white">Bonus "High Roller"</label>
+                            <input id="swal-eiffel-bonus" type="number" class="swal2-input w-full" value="${customRules.eiffelBonus}">
+                        </div>
+                        <div>
+                            <label for="swal-eiffel-hotel-req" class="text-white">Hôtels requis</label>
+                            <input id="swal-eiffel-hotel-req" type="number" class="swal2-input w-full" value="${customRules.eiffelHotelReq}">
+                        </div>
+                        <div>
+                            <label for="swal-eiffel-pass-go" class="text-white">Case départ "High Roller"</label>
+                            <input id="swal-eiffel-pass-go" type="number" class="swal2-input w-full" value="${customRules.eiffelPassGo}">
+                        </div>
+                    </div>
                 </div>
             `,
             background: '#14532d',
-            confirmButtonText: 'Fermer',
+            confirmButtonText: 'Sauvegarder',
+            preConfirm: () => {
+                // Save the custom rules to a global object
+                customRules.startingMoney = parseInt(document.getElementById('swal-starting-money').value, 10);
+                customRules.passGoMoney = parseInt(document.getElementById('swal-pass-go-money').value, 10);
+                customRules.eiffelBonus = parseInt(document.getElementById('swal-eiffel-bonus').value, 10);
+                customRules.eiffelHotelReq = parseInt(document.getElementById('swal-eiffel-hotel-req').value, 10);
+                customRules.eiffelPassGo = parseInt(document.getElementById('swal-eiffel-pass-go').value, 10);
+                
+                appendLog('Règles personnalisées sauvegardées.', 'system');
+            }
         });
-    };
+    }
+
+    document.getElementById('customize-rules-button').addEventListener('click', showRulesCustomizationModal);
+
+    function showRulesCustomizationModal() {
+        Swal.fire({
+            title: 'Personnaliser les Règles',
+            html: `
+                <div class="text-left p-4">
+                    <h3 class="text-lg font-bold text-yellow-400 mb-2">Règles Générales</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="swal-starting-money" class="text-white">Argent de départ</label>
+                            <input id="swal-starting-money" type="number" class="swal2-input w-full" value="${customRules.startingMoney}">
+                        </div>
+                        <div>
+                            <label for="swal-pass-go-money" class="text-white">Argent case départ</label>
+                            <input id="swal-pass-go-money" type="number" class="swal2-input w-full" value="${customRules.passGoMoney}">
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-yellow-400 mt-6 mb-2">Règles Mode Tour Eiffel</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="swal-eiffel-bonus" class="text-white">Bonus "High Roller"</label>
+                            <input id="swal-eiffel-bonus" type="number" class="swal2-input w-full" value="${customRules.eiffelBonus}">
+                        </div>
+                        <div>
+                            <label for="swal-eiffel-hotel-req" class="text-white">Hôtels requis</label>
+                            <input id="swal-eiffel-hotel-req" type="number" class="swal2-input w-full" value="${customRules.eiffelHotelReq}">
+                        </div>
+                        <div>
+                            <label for="swal-eiffel-pass-go" class="text-white">Case départ "High Roller"</label>
+                            <input id="swal-eiffel-pass-go" type="number" class="swal2-input w-full" value="${customRules.eiffelPassGo}">
+                        </div>
+                    </div>
+                </div>
+                    <h3 class="text-lg font-bold text-yellow-400 mt-6 mb-2">Probabilités des Cartes</h3>
+                    <div id="card-probabilities-container">
+                        </div>
+
+            `,
+            background: '#14532d',
+            confirmButtonText: 'Sauvegarder',
+            preConfirm: () => {
+                // Save the custom rules to a global object
+                customRules.startingMoney = parseInt(document.getElementById('swal-starting-money').value, 10);
+                customRules.passGoMoney = parseInt(document.getElementById('swal-pass-go-money').value, 10);
+                customRules.eiffelBonus = parseInt(document.getElementById('swal-eiffel-bonus').value, 10);
+                customRules.eiffelHotelReq = parseInt(document.getElementById('swal-eiffel-hotel-req').value, 10);
+                customRules.eiffelPassGo = parseInt(document.getElementById('swal-eiffel-pass-go').value, 10);
+                
+                appendLog('Règles personnalisées sauvegardées.', 'system');
+            }
+        });
+    }
+
     
     const loadSelectedBoard = async (boardId) => {
         try {
@@ -6952,33 +7060,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    const savedTheme = localStorage.getItem(THEME_KEY);
-    let initialTheme = 'classic';
-    if (savedTheme && THEMES[savedTheme]) {
-        initialTheme = savedTheme;
+    const savedCustomTheme = localStorage.getItem('monopolyCustomTheme');
+    if (savedCustomTheme) {
+        applyCustomTheme(JSON.parse(savedCustomTheme));
+        themeSelector.value = 'custom';
     } else {
-        const hour = new Date().getHours();
-        if (hour >= 19 || hour < 7) { // 7 PM to 7 AM
-            initialTheme = 'dark';
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        let initialTheme = 'classic';
+        if (savedTheme && THEMES[savedTheme]) {
+            initialTheme = savedTheme;
+        } else {
+            const hour = new Date().getHours();
+            if (hour >= 19 || hour < 7) { // 7 PM to 7 AM
+                initialTheme = 'dark';
+            }
         }
+        applyTheme(initialTheme);
     }
-    applyTheme(initialTheme);
 
     const autoSaveExists = localStorage.getItem(AUTO_SAVE_KEY);
     const namedSaves = JSON.parse(localStorage.getItem(NAMED_SAVES_INDEX_KEY)) || [];
 
     const loadGameSection = document.getElementById('load-game-section');
     const loadAutoSaveBtn = document.getElementById('load-auto-save-btn');
-    const loadNamedSaveBtn = document.getElementById('load-named-save-btn');
-
     if (!autoSaveExists && namedSaves.length === 0) {
         loadGameSection.style.display = 'none';
     } else {
         loadAutoSaveBtn.style.display = autoSaveExists ? 'block' : 'none';
-        loadNamedSaveBtn.style.display = namedSaves.length > 0 ? 'block' : 'none';
         
         loadAutoSaveBtn.onclick = () => loadGameState('auto_save');
-        loadNamedSaveBtn.onclick = showLoadGameMenu;
     }
 
     setupPlayerPanels(2); // Default to 2 players for a new game
@@ -7005,6 +7115,68 @@ const promptSaveGame = () => {
     });
 };
 
+const showThemeEditor = () => {
+    const themeVariables = [
+        { name: '--bg-primary', label: 'Fond Principal' },
+        { name: '--sidebar-bg', label: 'Fond de la Barre Latérale' },
+        { name: '--board-bg', label: 'Fond du Plateau' },
+        { name: '--board-border', label: 'Bordure du Plateau' },
+        { name: '--cell-bg', label: 'Fond des Cellules' },
+        { name: '--cell-border', label: 'Bordure des Cellules' },
+        { name: '--text-primary', label: 'Texte Principal' },
+        { name: '--text-secondary', label: 'Texte Secondaire' },
+        { name: '--sky-color', label: 'Couleur du Ciel' },
+    ];
+
+    let colorPickers = [];
+
+    const pickerHTML = themeVariables.map((variable, index) => `
+        <div class="flex items-center justify-between mb-4">
+            <label for="color-picker-${index}" class="text-white">${variable.label}</label>
+            <div id="color-picker-${index}" class="color-picker-container"></div>
+        </div>
+    `).join('');
+
+    Swal.fire({
+        title: 'Éditeur de Thème',
+        html: `<div class="p-4">${pickerHTML}</div>`,
+        background: '#14532d',
+        confirmButtonText: 'Appliquer et Sauvegarder',
+        showCancelButton: true,
+        cancelButtonText: 'Annuler',
+        didOpen: () => {
+            themeVariables.forEach((variable, index) => {
+                const colorPicker = new iro.ColorPicker(`#color-picker-${index}`, {
+                    width: 120,
+                    color: getComputedStyle(document.documentElement).getPropertyValue(variable.name).trim(),
+                    borderWidth: 1,
+                    borderColor: '#fff',
+                });
+
+                colorPicker.on('color:change', function(color) {
+                    document.documentElement.style.setProperty(variable.name, color.hexString);
+                });
+
+                colorPickers.push(colorPicker);
+            });
+        },
+        preConfirm: () => {
+            const customTheme = {};
+            colorPickers.forEach((picker, index) => {
+                customTheme[themeVariables[index].name] = picker.color.hexString;
+            });
+            localStorage.setItem('monopolyCustomTheme', JSON.stringify(customTheme));
+            Swal.fire('Thème sauvegardé !', 'Votre thème personnalisé a été sauvegardé localement.', 'success');
+        }
+    });
+};
+
+const applyCustomTheme = (theme) => {
+    for (const [key, value] of Object.entries(theme)) {
+        document.documentElement.style.setProperty(key, value);
+    }
+};
+
 const showGameMenu = () => {
     Swal.fire({
         title: 'Menu du Jeu',
@@ -7012,10 +7184,14 @@ const showGameMenu = () => {
         showCancelButton: true,
         confirmButtonText: 'Recommencer',
         denyButtonText: 'Quitter',
-        html: '<button id="swal-save-as-btn" class="swal2-styled w-full mt-2">Sauvegarder la partie sous...</button>',
+        html: `
+            <button id="swal-save-as-btn" class="swal2-styled w-full mt-2">Sauvegarder la partie sous...</button>
+            <button id="swal-theme-editor-btn" class="swal2-styled w-full mt-2 bg-teal-500 hover:bg-teal-600">Éditeur de Thème</button>
+        `,
         cancelButtonText: 'Reprendre',
         didOpen: () => {
             document.getElementById('swal-save-as-btn').onclick = promptSaveGame;
+            document.getElementById('swal-theme-editor-btn').onclick = showThemeEditor;
         },
         customClass: {
             confirmButton: 'bg-yellow-500 text-black',
