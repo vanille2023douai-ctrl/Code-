@@ -21,6 +21,7 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-storage-compat.js"></script>
     <!-- SortableJS CDN for drag-and-drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <!-- Canvas-Confetti CDN for victory effects -->
@@ -594,6 +595,15 @@
             </label>
             <span class="text-lg font-bold">Mode 3D</span>
         </div>
+
+        <div id="load-game-section" class="my-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button id="load-auto-save-btn" class="w-full py-2 bg-blue-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-blue-500 transition">
+                Charger la dernière session
+            </button>
+            <button id="manage-saves-btn" class="w-full py-2 bg-purple-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-purple-500 transition">
+                Gérer les sauvegardes
+            </button>
+        </div>
         
         <div class="mb-6">
             <label for="player-count" class="block text-lg font-bold mb-2">Nombre de Joueurs :</label>
@@ -729,29 +739,23 @@
             <button id="customize-rules-button" class="w-full mt-4 py-2 bg-purple-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-purple-500 transition">
                 Personnaliser les Règles
             </button>
+            <button id="upload-stl-to-library-btn" class="w-full mt-4 py-2 bg-teal-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-teal-500 transition">
+                Mettre STL dans le répertoire
+            </button>
         </div>
 
-        <button id="create-board-button" class="w-full py-3 bg-blue-500 text-white font-bold text-xl rounded-lg shadow-lg hover:bg-blue-400 transition transform hover:scale-105 mb-4">
+        <div class="grid grid-cols-1 gap-4 mt-4">
+            <button id="card-config-button" class="w-full py-2 bg-pink-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-pink-500 transition">
+                Modifier les Cartes
+            </button>
+        </div>
+
+        <button id="create-board-button" class="w-full py-3 bg-gray-700 text-white font-bold text-xl rounded-lg shadow-lg hover:bg-gray-600 transition transform hover:scale-105 mb-4 mt-8">
             Créer un Plateau
         </button>
         <button id="start-game-button" class="w-full py-3 bg-yellow-500 text-green-900 font-bold text-xl rounded-lg shadow-lg hover:bg-yellow-400 transition transform hover:scale-105">
             Lancer la Partie
         </button>
-
-        <div id="load-game-section" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button id="load-auto-save-btn" class="w-full py-2 bg-gray-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-gray-500 transition">
-                Charger la dernière session
-            </button>
-            <button id="manage-saves-btn" class="w-full py-2 bg-gray-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-gray-500 transition">
-                Gérer les sauvegardes
-            </button>
-        </div>
-
-        <div class="grid grid-cols-1 gap-4 mt-4">
-            <button id="card-config-button" class="w-full py-2 bg-gray-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-gray-500 transition">
-                Modifier les Cartes
-            </button>
-        </div>
     </div>
 </div>
 
@@ -828,6 +832,13 @@
                         </select>
                     </div>
 
+                    <div id="board-3d-theme-container" class="mt-4 hidden">
+                        <label for="board-3d-theme-selector" class="block text-sm font-bold mb-2">Thème du Plateau 3D</label>
+                        <select id="board-3d-theme-selector" class="w-full p-2 rounded bg-gray-200 text-gray-800 border border-gray-300">
+                            <!-- Options will be dynamically inserted here -->
+                        </select>
+                    </div>
+
                     <h2 class="text-xl font-bold mt-6 mb-3 text-gray-800 border-t pt-4">Statut des Joueurs</h2>
                     
                     <!-- Player Cards Container -->
@@ -872,6 +883,12 @@
                 <div id="editor-sidebar-content" class="hidden">
                     <h2 class="text-2xl font-bold mb-4 text-gray-800">Éditeur de Plateau</h2>
                     <p class="text-sm text-gray-600 mb-4">Cliquez sur une case pour la modifier. Faites glisser les cases pour les réorganiser.</p>
+                    <button id="edit-chance-cards-btn" onclick="showCardEditor('CHANCE')" class="w-full p-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-bold mt-4">
+                        <i class="fas fa-question mr-2"></i>Modifier Cartes Chance
+                    </button>
+                    <button id="edit-community-cards-btn" onclick="showCardEditor('COMMUNITY_CHEST')" class="w-full p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-bold mt-2">
+                        <i class="fas fa-box-open mr-2"></i>Modifier Cartes Communauté
+                    </button>
                     <button id="save-board-button" class="w-full p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-bold mt-4">
                         <i class="fas fa-save mr-2"></i>Enregistrer le Plateau
                     </button>
@@ -999,6 +1016,29 @@ const playSound = (id) => {
     if (sound) {
         sound.currentTime = 0;
         sound.play();
+    }
+};
+
+const populate3DBoardThemeSelector = () => {
+    const selector = document.getElementById('board-3d-theme-selector');
+    selector.innerHTML = ''; // Clear existing options
+    BOARD_3D_THEMES.forEach(theme => {
+        const option = document.createElement('option');
+        option.value = theme.color;
+        option.textContent = theme.name;
+        selector.appendChild(option);
+    });
+
+    selector.addEventListener('change', (e) => {
+        apply3DBoardTheme(parseInt(e.target.value, 16));
+    });
+};
+
+const apply3DBoardTheme = (colorValue) => {
+    if (!scene3d) return;
+    const boardMesh = scene3d.getObjectByName('main-board-mesh');
+    if (boardMesh && boardMesh.material) {
+        boardMesh.material.color.set(colorValue);
     }
 };
 
@@ -1292,6 +1332,29 @@ const TOKEN_HALF_SIZE = TOKEN_SIZE / 2;
 let scene, camera, renderer, diceMesh1, diceMesh2;
 const DICE_SIZE = 25;
 
+const BOARD_3D_THEMES = [
+    { name: 'Vert Classique', color: 0xcfe2cf },
+    { name: 'Marbre Blanc', color: 0xffffff },
+    { name: 'Bois Foncé', color: 0x3d2b1f },
+    { name: 'Acier Brossé', color: 0xcccccc },
+    { name: 'Nuit Étoilée', color: 0x0a0a2a },
+    { name: 'Rouge Velours', color: 0x8b0000 },
+    { name: 'Bleu Océan', color: 0x0077be },
+    { name: 'Sable du Désert', color: 0xedc9af },
+    { name: 'Forêt Profonde', color: 0x013220 },
+    { name: 'Améthyste', color: 0x9966cc },
+    { name: 'Or Rose', color: 0xb76e79 },
+    { name: 'Gris Carbone', color: 0x36454f },
+    { name: 'Menthe Glaciale', color: 0x98ff98 },
+    { name: 'Corail', color: 0xff7f50 },
+    { name: 'Ardoise', color: 0x708090 },
+    { name: 'Cuivre', color: 0xb87333 },
+    { name: 'Béton Urbain', color: 0x838383 },
+    { name: 'Galaxie', color: 0x483d8b },
+    { name: 'Émeraude', color: 0x50c878 },
+    { name: 'Parchemin Ancien', color: 0xfdf5e6 },
+];
+
 // =================================================================
 // 3D SCENE IMPLEMENTATION (THREE.JS)
 // =================================================================
@@ -1404,6 +1467,36 @@ const init3DScene = () => {
     animate();
     create3DBoard();
     create3DPawns();
+
+    // Add raycasting for clicking on properties
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const onBoardClick = (event) => {
+        if (!isEditorMode) return;
+
+        // Correctly calculate mouse position relative to the canvas
+        const rect = renderer3d.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera3d);
+
+        const intersects = raycaster.intersectObjects(scene3d.children);
+
+        for (let i = 0; i < intersects.length; i++) {
+            if (intersects[i].object.name.startsWith('property-')) {
+                const propId = parseInt(intersects[i].object.name.split('-')[1], 10);
+                showPropertyEditor(propId);
+                break; // Stop after finding the first property
+            }
+        }
+    };
+    renderer3d.domElement.addEventListener('click', onBoardClick, false);
+    
+    // Show and populate the 3D board theme selector
+    document.getElementById('board-3d-theme-container').classList.remove('hidden');
+    populate3DBoardThemeSelector();
 };
 
 function createClassicAirplane() {
@@ -1478,6 +1571,12 @@ function createClassicAirplane() {
 const handleCustomPawnUpload = (event, playerIndex) => {
     const file = event.target.files[0];
     if (!file) return;
+
+    const customPawnCount = PAWN_MODELS.filter(p => p.isCustom).length;
+    if (customPawnCount >= 8) {
+        Swal.fire('Limite atteinte', 'Vous ne pouvez pas avoir plus de 8 pions personnalisés. Veuillez en supprimer un avant d\'en ajouter un nouveau.', 'warning');
+        return;
+    }
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1557,22 +1656,27 @@ const create3DPawns = () => {
     const stlLoader = new THREE.STLLoader();
 
     players.forEach((player, index) => {
-        // Use the selected pawn index. If it's not set (undefined/null), 
-        // default to the player's order (1-based, so player 1 gets model 1, etc.),
-        // ensuring the Sphere (index 0) is not a default.
-        const modelIndex = (player.pawnModelIndex !== undefined && player.pawnModelIndex !== null)
-            ? player.pawnModelIndex
-            : index + 1;
+        let modelInfo;
 
-        let modelInfo = PAWN_MODELS[modelIndex];
-
-        // Safety check in case the index is out of bounds, default to the first model (after Sphere).
-        if (!modelInfo) {
-            console.error(`Invalid modelIndex ${modelIndex} for player ${player.name}. Defaulting to model 1.`);
-            modelInfo = PAWN_MODELS[1];
+        if (player.pawnFromLibrary) {
+            modelInfo = {
+                url: player.pawnFromLibrary.url,
+                name: player.pawnFromLibrary.name,
+                extension: 'stl', // Library only supports STL for now
+                isCustom: true // Treat it as custom for loading purposes
+            };
+        } else {
+            const modelIndex = (player.pawnModelIndex !== undefined && player.pawnModelIndex !== null)
+                ? player.pawnModelIndex
+                : index + 1;
+            modelInfo = PAWN_MODELS[modelIndex];
+            if (!modelInfo) {
+                console.error(`Invalid modelIndex ${modelIndex} for player ${player.name}. Defaulting to model 1.`);
+                modelInfo = PAWN_MODELS[1];
+            }
         }
 
-        const isGeometricOrBuilding = ['sphere', 'cube', 'dodecahedron', 'icosahedron', 'pyramid', 'cone', 'building'].includes(modelInfo.url);
+        const isGeometricOrBuilding = !modelInfo.isCustom && ['sphere', 'cube', 'dodecahedron', 'icosahedron', 'pyramid', 'cone', 'building'].includes(modelInfo.url);
 
         if (isGeometricOrBuilding) {
             let geometry;
@@ -1739,6 +1843,7 @@ const create3DBoard = () => {
     const boardGeometry = new THREE.BoxGeometry(boardSize, 10, boardSize);
     const boardMaterial = new THREE.MeshPhongMaterial({ color: 0xcfe2cf });
     const boardMesh = new THREE.Mesh(boardGeometry, boardMaterial);
+    boardMesh.name = 'main-board-mesh'; // Assign a name for easy selection
     boardMesh.position.y = -5;
     scene3d.add(boardMesh);
 
@@ -1765,6 +1870,7 @@ const create3DBoard = () => {
         const material = new THREE.MeshBasicMaterial({ map: texture });
         const geometry = new THREE.PlaneGeometry(width, height);
         const plane = new THREE.Mesh(geometry, material);
+        plane.name = `property-${prop.id}`; 
 
         plane.rotation.x = -Math.PI / 2;
         plane.position.y = 1;
@@ -1995,6 +2101,71 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
     }
     context.fillText(line, x, y);
 }
+
+const update3DCellTexture = (propId) => {
+    const prop = PROPERTIES[propId];
+    const cellMesh = scene3d.getObjectByName(`property-${propId}`);
+    if (!cellMesh) return;
+
+    const side = Math.floor(propId / 10);
+    const isCorner = propId % 10 === 0;
+    
+    let width, height;
+    if (isCorner) {
+        width = CORNER_CELL_SIZE_3D;
+        height = CORNER_CELL_SIZE_3D;
+    } else {
+        if (side === 0 || side === 2) {
+            width = PROPERTY_CELL_WIDTH_3D;
+            height = PROPERTY_STRIP_DEPTH_3D;
+        } else {
+            width = PROPERTY_STRIP_DEPTH_3D;
+            height = PROPERTY_CELL_WIDTH_3D;
+        }
+    }
+
+    const newTexture = createPropertyTexture(prop, width * 5, height * 5, side);
+    cellMesh.material.map = newTexture;
+    cellMesh.material.needsUpdate = true;
+};
+
+const update3DOwnershipVisuals = () => {
+    if (!scene3d) return;
+
+    // First, remove any existing ownership borders
+    const toRemove = [];
+    scene3d.traverse((object) => {
+        if (object.name === 'ownership-border') {
+            toRemove.push(object);
+        }
+    });
+    toRemove.forEach(obj => obj.parent.remove(obj));
+
+    PROPERTIES.forEach(prop => {
+        if (prop.owner) {
+            const owner = players.find(p => p.id === prop.owner);
+            if (!owner) return;
+
+            const cellMesh = scene3d.getObjectByName(`property-${prop.id}`);
+            if (!cellMesh) return;
+
+            // Use a plane with a colored material to act as a border/overlay
+            const borderColor = new THREE.Color(owner.color);
+            
+            // Create a slightly larger plane to sit under the main cell texture
+            const borderGeometry = new THREE.PlaneGeometry(cellMesh.geometry.parameters.width + 2, cellMesh.geometry.parameters.height + 2);
+            const borderMaterial = new THREE.MeshBasicMaterial({ color: borderColor, transparent: true, opacity: 0.8 });
+            const border = new THREE.Mesh(borderGeometry, borderMaterial);
+
+            border.rotation.copy(cellMesh.rotation);
+            border.position.copy(cellMesh.position);
+            border.position.y = 0.5; // Sit just below the main texture plane
+            border.name = 'ownership-border';
+
+            scene3d.add(border);
+        }
+    });
+};
 
 
 // =================================================================
@@ -4418,6 +4589,9 @@ const setupBoardEditor = () => {
         if (boardEl.sortable) {
             boardEl.sortable.destroy();
         }
+        document.getElementById('contextualActions').style.display = 'block';
+        document.getElementById('rollButton').style.display = 'block';
+
         const cells = document.querySelectorAll('.grid-cell.editor-listener');
         cells.forEach(cell => {
             const newCell = cell.cloneNode(true);
@@ -4435,6 +4609,9 @@ const setupBoardEditor = () => {
             communityChestPile.parentNode.replaceChild(newCommunityPile, communityChestPile);
         }
         return;
+    } else {
+        document.getElementById('contextualActions').style.display = 'none';
+        document.getElementById('rollButton').style.display = 'none';
     }
 
     boardEl.classList.add('editor-mode');
@@ -4483,7 +4660,7 @@ const setupBoardEditor = () => {
 };
 
 
-const showPropertyEditor = (cellId, forceEiffel = false) => {
+window.showPropertyEditor = (cellId, forceEiffel = false) => {
     if (!isEditorMode) return;
 
     const isEiffelTowerMode = forceEiffel;
@@ -4492,7 +4669,6 @@ const showPropertyEditor = (cellId, forceEiffel = false) => {
     let propForEditing;
     if (isEiffelTowerMode) {
         const eiffelProp = PROPERTIES_EIFFEL_TOWER.find(p => p.id === cellId);
-        // Fallback to base property but ensure rent array is correct length for editor
         const baseProp = PROPERTIES.find(p => p.id === cellId) || {};
         propForEditing = JSON.parse(JSON.stringify(eiffelProp || baseProp));
         if (propForEditing.type === 'PROPERTY' && (!propForEditing.rent || propForEditing.rent.length < 11)) {
@@ -4509,7 +4685,6 @@ const showPropertyEditor = (cellId, forceEiffel = false) => {
         propForEditing = JSON.parse(JSON.stringify(standardProp));
     }
     
-    // Use the name from the base PROPERTIES array for the title, as it's the one displayed on the board
     const basePropForTitle = PROPERTIES.find(p => p.id === cellId);
     const titleName = basePropForTitle ? basePropForTitle.name : propForEditing.name;
 
@@ -4635,10 +4810,11 @@ const showPropertyEditor = (cellId, forceEiffel = false) => {
             };
             
             typeSelector.addEventListener('change', updateDynamicFields);
-            handleGroupChange();
+            
             const groupSelectorInitial = document.getElementById('swal-prop-group');
             if (groupSelectorInitial) {
                 groupSelectorInitial.addEventListener('change', handleGroupChange);
+                handleGroupChange();
             }
         },
         preConfirm: () => {
@@ -4646,10 +4822,13 @@ const showPropertyEditor = (cellId, forceEiffel = false) => {
             const propIndex = targetArray.findIndex(p => p.id === cellId);
             if (propIndex === -1) {
                 console.error(`Could not find property with id ${cellId} to save.`);
-                return;
+                Swal.showValidationMessage(`Erreur: Propriété non trouvée.`);
+                return false;
             }
             const propToUpdate = targetArray[propIndex];
             const newType = document.getElementById('swal-prop-type').value;
+            const newName = document.getElementById('swal-prop-name').value;
+            
             const typeProperties = {
                 PROPERTY: ['price', 'rent', 'houseCost', 'group', 'color', 'superiorHouseCost'],
                 RAILROAD: ['price', 'rent', 'group'],
@@ -4662,14 +4841,12 @@ const showPropertyEditor = (cellId, forceEiffel = false) => {
                 }
             });
 
-            propToUpdate.name = document.getElementById('swal-prop-name').value;
+            propToUpdate.name = newName;
             propToUpdate.type = newType;
-
+            
             if (!isEiffelTowerMode) {
-                const baseProp = PROPERTIES.find(p => p.id === cellId);
                 const eiffelProp = PROPERTIES_EIFFEL_TOWER.find(p => p.id === cellId);
-                if (baseProp) baseProp.name = propToUpdate.name;
-                if (eiffelProp) eiffelProp.name = propToUpdate.name;
+                if (eiffelProp) eiffelProp.name = newName;
             }
 
             const groupSelector = document.getElementById('swal-prop-group');
@@ -4687,6 +4864,9 @@ const showPropertyEditor = (cellId, forceEiffel = false) => {
                     for (let i = 0; i < rentLevels; i++) {
                         propToUpdate.rent[i] = parseInt(document.getElementById(`swal-prop-rent-${i}`).value, 10) || 0;
                     }
+                    if (isEiffelTowerMode) {
+                        propToUpdate.superiorHouseCost = parseInt(document.getElementById('swal-prop-superior-cost').value, 10) || 0;
+                    }
                     break;
                 case 'RAILROAD':
                     propToUpdate.price = parseInt(document.getElementById('swal-prop-price').value, 10) || 0;
@@ -4701,14 +4881,22 @@ const showPropertyEditor = (cellId, forceEiffel = false) => {
                     propToUpdate.fine = parseInt(document.getElementById('swal-prop-fine').value, 10) || 0;
                     break;
             }
-
-            renderBoard();
-            renderTokens();
-            if (isEditorMode) setupBoardEditor();
-            appendLog(`La case ${cellId} (${propToUpdate.name}) a été mise à jour en mode ${isEiffelTowerMode ? 'Tour Eiffel' : 'Normal'}.`, 'system');
+            return { propName: newName, mode: isEiffelTowerMode ? 'Tour Eiffel' : 'Normal' };
         }
     }).then((result) => {
-        if (result.dismiss === Swal.DismissReason.cancel) {
+        if (result.isConfirmed) {
+            const is3DMode = document.getElementById('mode-toggle').checked;
+            if (is3DMode) {
+                update3DCellTexture(cellId);
+            } else {
+                renderBoard();
+            }
+            if (isEditorMode) {
+                setupBoardEditor();
+            }
+            const { propName, mode } = result.value;
+            appendLog(`La case ${cellId} (${propName}) a été mise à jour en mode ${mode}.`, 'system');
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
             deleteProperty(cellId);
         }
     });
@@ -7086,7 +7274,7 @@ const openPawnSelection = (playerIndex) => {
             html: `
                 <input type="text" id="pawn-search-3d" placeholder="Rechercher un pion..." class="swal2-input w-full mb-4">
                 <div id="pawn-grid-3d" class="grid grid-cols-4 gap-3 p-4 max-h-80 overflow-y-auto">${renderPawnGrid3D()}</div>
-                <input type="file" id="custom-pawn-upload" class="hidden" accept=".stl,.gltf,.glb">
+                <input type="file" id="custom-pawn-upload-${playerIndex}" class="hidden" accept=".stl,.gltf,.glb">
                 <button id="upload-pawn-button" class="w-full mt-4 py-2 bg-indigo-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-indigo-500 transition">
                     <i class="fas fa-upload mr-2"></i> Charger votre modèle
                 </button>
@@ -7095,10 +7283,23 @@ const openPawnSelection = (playerIndex) => {
             showConfirmButton: false,
             width: '600px',
             didOpen: () => {
-                const uploadButton = document.getElementById('upload-pawn-button');
-                const fileInput = document.getElementById('custom-pawn-upload');
-                uploadButton.onclick = () => fileInput.click();
-                fileInput.onchange = (event) => handleCustomPawnUpload(event, playerIndex);
+                document.getElementById('upload-pawn-button').onclick = () => {
+                    Swal.fire({
+                        title: 'Source du modèle',
+                        text: 'Où se trouve le fichier 3D ?',
+                        showDenyButton: true,
+                        confirmButtonText: 'Depuis la bibliothèque',
+                        denyButtonText: `Depuis mon ordinateur`,
+                        background: '#14532d',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            showStlLibrary(playerIndex);
+                        } else if (result.isDenied) {
+                            document.getElementById(`custom-pawn-upload-${playerIndex}`).click();
+                        }
+                    });
+                };
+                document.getElementById(`custom-pawn-upload-${playerIndex}`).onchange = (event) => handleCustomPawnUpload(event, playerIndex);
 
                 const searchInput = document.getElementById('pawn-search-3d');
                 const pawnGrid = document.getElementById('pawn-grid-3d');
@@ -7483,7 +7684,8 @@ const initializeGame = () => {
             hasEiffelMultiplier: false,
             passGoAmount: customRules.passGoMoney,
             stocks: {},
-            pawnModelIndex: setup.pawnModelIndex
+            pawnModelIndex: setup.pawnModelIndex,
+            pawnFromLibrary: setup.pawnFromLibrary
         });
     }
     activePlayerIndex = 0;
@@ -7500,6 +7702,11 @@ const initializeGame = () => {
             // Check for editor mode
             isEditorMode = document.getElementById('board-editor-mode').checked;
             const is3DMode = document.getElementById('mode-toggle').checked;
+
+            if (isEditorMode) {
+                document.getElementById('game-sidebar-content').classList.add('hidden');
+                document.getElementById('editor-sidebar-content').classList.remove('hidden');
+            }
 
             if (is3DMode) {
                 init3DScene();
@@ -7590,9 +7797,19 @@ const enterEditorMode = () => {
     startupMenu.classList.add('hidden');
     gameContainer.classList.remove('hidden');
 
-    // Show the board, but without tokens initially
-    renderBoard();
-    calculateCellPositions();
+    const is3DMode = document.getElementById('mode-toggle').checked;
+
+    if (is3DMode) {
+        init3DScene();
+        document.getElementById('edit-chance-cards-btn').classList.remove('hidden');
+        document.getElementById('edit-community-cards-btn').classList.remove('hidden');
+    } else {
+        // Show the board, but without tokens initially
+        renderBoard();
+        calculateCellPositions();
+        document.getElementById('edit-chance-cards-btn').classList.add('hidden');
+        document.getElementById('edit-community-cards-btn').classList.add('hidden');
+    }
 
     // Switch to editor sidebar
     document.getElementById('game-sidebar-content').classList.add('hidden');
@@ -7741,7 +7958,8 @@ const getGameState = () => ({
     })),
     activePlayerIndex: activePlayerIndex,
     currentTurn: currentTurn,
-    gameInProgress: true
+    gameInProgress: true,
+    is3DMode: document.getElementById('mode-toggle').checked
 });
 
 // This is now the auto-save function
@@ -7806,20 +8024,29 @@ const loadGameState = (saveName) => {
     // Re-render everything with the loaded data
     init3DDice();
     setTimeout(() => {
-        handleInitialLayout();
+        if (savedState.is3DMode) {
+            document.getElementById('mode-toggle').checked = true;
+            init3DScene();
+            update3DOwnershipVisuals();
+        } else {
+            document.getElementById('mode-toggle').checked = false;
+            handleInitialLayout();
+        }
         renderTokens();
         renderPlayerCards();
         updateContextualButtons();
         // Update cell owner visuals
-        PROPERTIES.forEach(prop => {
-            if (prop.owner) {
-                const player = players.find(p => p.id === prop.owner);
-                const cellEl = document.getElementById(`cell-${prop.id}`);
-                if (cellEl && player) {
-                    cellEl.style.boxShadow = `inset 0 0 0 4px ${player.color}`;
+        if (!savedState.is3DMode) {
+            PROPERTIES.forEach(prop => {
+                if (prop.owner) {
+                    const player = players.find(p => p.id === prop.owner);
+                    const cellEl = document.getElementById(`cell-${prop.id}`);
+                    if (cellEl && player) {
+                        cellEl.style.boxShadow = `inset 0 0 0 4px ${player.color}`;
+                    }
                 }
-            }
-        });
+            });
+        }
         appendLog("Partie précédente chargée.", 'system');
     }, 100);
 
@@ -7878,8 +8105,171 @@ themeSelector.addEventListener('change', (e) => {
 
 
 
+const uploadStlToLibrary = () => {
+    if (!db) {
+        Swal.fire('Erreur', 'La connexion à Firebase n\'est pas disponible.', 'error');
+        return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.stl';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const storageRef = firebase.storage().ref();
+        const stlRef = storageRef.child(`stl_library/${file.name}`);
+        const uploadTask = stlRef.put(file);
+
+        Swal.fire({
+            title: 'Téléversement en cours...',
+            html: `Téléversement de <b>${file.name}</b>. <br><progress id="upload-progress" value="0" max="100"></progress>`,
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        uploadTask.on('state_changed', 
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                const progressBar = document.getElementById('upload-progress');
+                if (progressBar) {
+                    progressBar.value = progress;
+                }
+            }, 
+            (error) => {
+                console.error("Upload failed:", error);
+                Swal.fire('Erreur', 'Le téléversement a échoué.', 'error');
+            }, 
+            () => {
+                Swal.fire('Succès !', `Le fichier ${file.name} a été ajouté à la bibliothèque.`, 'success');
+            }
+        );
+    };
+    input.click();
+};
+
+const showStlLibrary = async (playerIndex) => {
+    if (!firebase.storage) {
+        Swal.fire('Erreur', 'Le module de stockage Firebase n\'est pas chargé.', 'error');
+        return;
+    }
+
+    const storageRef = firebase.storage().ref('stl_library/');
+
+    Swal.fire({
+        title: 'Bibliothèque STL',
+        html: '<p class="text-white">Chargement des modèles...</p>',
+        background: '#14532d',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const result = await storageRef.listAll();
+        const files = result.items;
+
+        if (files.length === 0) {
+            Swal.fire('Bibliothèque Vide', 'Aucun fichier STL n\'a été trouvé dans la bibliothèque.', 'info');
+            return;
+        }
+
+        const gridHTML = `<div class="grid grid-cols-4 gap-4 p-4 max-h-96 overflow-y-auto">${files.map((fileRef, i) => `
+            <div class="relative bg-green-800 p-2 rounded-lg text-white hover:bg-yellow-500 hover:text-green-900 transition focus:outline-none focus:ring-2 focus:ring-yellow-300 cursor-pointer" 
+                 onclick="selectPawnFromLibrary(${playerIndex}, '${fileRef.fullPath}', '${fileRef.name}')">
+                <canvas id="stl-preview-${i}" class="w-full h-24 rounded"></canvas>
+                <p class="text-center text-xs mt-1 font-semibold">${fileRef.name}</p>
+            </div>
+        `).join('')}</div>`;
+
+        Swal.update({
+            title: 'Bibliothèque STL',
+            html: gridHTML,
+            showConfirmButton: true,
+            confirmButtonText: 'Fermer'
+        });
+
+        // Now render the previews
+        files.forEach(async (fileRef, i) => {
+            const url = await fileRef.getDownloadURL();
+            const canvas = document.getElementById(`stl-preview-${i}`);
+            if (canvas) {
+                renderStlPreview(canvas, url);
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching STL library:", error);
+        Swal.fire('Erreur', 'Impossible de charger la bibliothèque STL.', 'error');
+    }
+};
+
+const renderStlPreview = (canvas, url) => {
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x166534);
+    const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+    camera.position.set(0, 10, 30);
+
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(5, 10, 7.5);
+    scene.add(directionalLight);
+
+    const loader = new THREE.STLLoader();
+    loader.load(url, (geometry) => {
+        geometry.computeBoundingBox();
+        geometry.center();
+        const material = new THREE.MeshPhongMaterial({ color: 0xcccccc, specular: 0x111111, shininess: 30 });
+        const model = new THREE.Mesh(geometry, material);
+
+        const box = geometry.boundingBox;
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 20 / maxDim;
+        model.scale.set(scale, scale, scale);
+        
+        scene.add(model);
+
+        const animate = () => {
+            requestAnimationFrame(animate);
+            model.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        };
+        animate();
+    });
+};
+
+const selectPawnFromLibrary = async (playerIndex, filePath, name) => {
+    const storageRef = firebase.storage().ref(filePath);
+    const url = await storageRef.getDownloadURL();
+
+    playerSetupData[playerIndex].pawnFromLibrary = { url: url, name: name };
+    // Clear the other pawn selection types to ensure this one is prioritized
+    delete playerSetupData[playerIndex].pawnModelIndex;
+    delete playerSetupData[playerIndex].pawn;
+
+    const display = document.getElementById(`pawn-display-${playerIndex}`);
+    display.innerHTML = name;
+    display.style.fontSize = '12px';
+    display.style.padding = '5px';
+    display.style.backgroundColor = playerSetupData[playerIndex].color; // Keep existing color
+
+    Swal.close();
+};
+
+
 // Initial setup
 document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('upload-stl-to-library-btn').addEventListener('click', uploadStlToLibrary);
     // Populate theme selector
     const themeSelector = document.getElementById('theme-selector');
     THEMES['custom'] = { name: 'Personnalisé', colors: {} };
@@ -8059,7 +8449,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Update the board display immediately
-            renderBoard();
+    const is3DMode = document.getElementById('mode-toggle').checked;
+    if (is3DMode) {
+        PROPERTIES.forEach(prop => update3DCellTexture(prop.id));
+    } else {
+        renderBoard();
+    }
 
             Swal.close();
             Swal.fire('Chargé !', `Le plateau '${doc.data().name}' a été chargé.`, 'success');
